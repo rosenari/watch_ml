@@ -1,0 +1,40 @@
+/* 전체 글씨 크기와 굵기 줄임 */
+.deplayment-page {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* 업로드 박스 안의 텍스트 스타일 조정 */
+.ant-upload-wrapper .ant-upload-drag p.ant-upload-text {
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* 테이블 제목의 글씨 크기와 굵기 조정 */
+.table-title {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* 테이블 내부 글씨 크기와 굵기 조정 */
+.custom-table .ant-table-thead > tr > th {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.custom-table .ant-table-tbody > tr > td {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.table-button {
+  font-size: 12px;
+}
+
+.upload-button {
+  font-size: 12px;
+}
+
+.reset-button {
+  font-size: 12px;
+}

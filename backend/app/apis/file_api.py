@@ -1,6 +1,8 @@
-from fastapi import APIRouter, UploadFile, HTTPException
+from fastapi import APIRouter, UploadFile, HTTPException, Depends
 from typing import List
 from app.services.file_service import FileService
+from app.validation import validate_zip_mime_type
+
 
 router = APIRouter()
 file_service = FileService()
@@ -8,7 +10,7 @@ file_service = FileService()
 
 # 파일 업로드
 @router.post("/upload", response_model=str)
-async def upload_file(file: UploadFile):
+async def upload_file(file: UploadFile = Depends(validate_zip_mime_type)):
     try:
         file_path = await file_service.upload_file(file)
         return file_path

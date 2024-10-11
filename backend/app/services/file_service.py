@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import UploadFile, Depends
+from fastapi import UploadFile
 from app.repositories.file_repository import FileRepository
 
 
@@ -14,5 +14,5 @@ class FileService:
     def delete_file(self, file_name: str) -> None:
         return self.repository.delete_file(file_name)
 
-    def get_file_list(self) -> List[str]:
+    def get_file_list(self) -> List[dict]:
         return self.repository.list_files()

@@ -2,9 +2,20 @@ body {
   margin: 0;
   font-family: 'Arial', sans-serif;
   background-color: #fff;
+  overflow: hidden;
+}
+
+.navbar_frame {
+  overflow: hidden;
+}
+
+.page_frame {
+  height: 100vh;
+  overflow: auto;
 }
 
 .ant-layout {
+  height: 100vh;
   background: #fff !important;
 }
 

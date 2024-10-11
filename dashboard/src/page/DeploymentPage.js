@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Upload, Table, Button, message } from 'antd';
 import { InboxOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { fileUpload } from '../api/files';
 import './DeploymentPage.css';  // 스타일 추가
 
 const { Dragger } = Upload;
@@ -26,28 +27,24 @@ function DeploymentPage() {
   const [fileList, setFileList] = useState([]); // 선택된 파일들을 저장할 상태
 
   // 파일 업로드 처리
-  const handleUpload = () => {
+  const handleUpload = async () => {
     // 업로드할 파일이 없을 경우 메시지 출력
     if (fileList.length === 0) {
       message.error('업로드할 파일이 없습니다.');
       return;
     }
 
-    // 각 파일을 처리하는 로직 (서버로 업로드하는 실제 처리)
-    fileList.forEach((file) => {
-      const formData = new FormData();
-      formData.append('file', file);
+    for (const file of fileList) {
+      try {
+        const data = await fileUpload(file);
+        console.log(data);
+        if (data.file_name != file.name) {
+          console.log(file.name);
+          throw new Error('정상적으로 업로드 되지 않음.');
+        }
 
-      // 실제 업로드 요청 (서버 경로에 맞게 변경 필요)
-      fetch('/upload.do', {
-        method: 'POST',
-        body: formData,
-      })
-      .then(response => response.json())
-      .then(data => {
         message.success(`${file.name} 업로드 성공`);
-
-        // 데이터셋 테이블에 업로드된 파일 정보 추가
+    
         setDatasetData(prevData => [
           ...prevData,
           {
@@ -56,13 +53,12 @@ function DeploymentPage() {
             uploadDate: new Date().toLocaleString(),
           },
         ]);
-      })
-      .catch(() => {
+      } catch (error) {
+        console.log(error);
         message.error(`${file.name} 업로드 실패`);
-      });
-    });
+      }
+    }
 
-    // 업로드 후 파일 목록 초기화
     setFileList([]);
   };
 
@@ -211,6 +207,7 @@ function DeploymentPage() {
           pagination={false}
         />
       </div>
+
     </div>
   );
 }

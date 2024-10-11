@@ -10,21 +10,21 @@ file_service = FileService(FileRepository())
 
 
 # 파일 업로드
-@router.post("/upload", response_model=str)
+@router.post("/upload", response_model=dict)
 async def upload_file(file: UploadFile = Depends(validate_zip_file)):
     try:
-        file_path = await file_service.upload_file(file)
-        return file_path
+        file_name = await file_service.upload_file(file)
+        return {"file_name": file_name}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 # 파일 삭제
-@router.delete("/delete/{file_name}", response_model=str)
+@router.delete("/delete/{file_name}", response_model=dict)
 async def delete_file(file_name: str):
     try:
         file_service.delete_file(file_name)
-        return file_name
+        return {"file_name": file_name}
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="File not found")
     except Exception as e:

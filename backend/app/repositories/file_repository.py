@@ -16,7 +16,7 @@ class FileRepository:
         file_path = os.path.join(self.file_directory, file_name)
         async with aiofiles.open(file_path, 'wb') as f:
             await f.write(content)
-        return file_path
+        return file_name
 
     def delete_file(self, file_name: str) -> None:
         file_path = os.path.join(self.file_directory, file_name)

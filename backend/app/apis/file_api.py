@@ -6,6 +6,7 @@ router = APIRouter()
 file_service = FileService()
 
 
+# 파일 업로드
 @router.post("/upload", response_model=str)
 async def upload_file(file: UploadFile):
     try:
@@ -15,17 +16,19 @@ async def upload_file(file: UploadFile):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/delete/{file_name}")
+# 파일 삭제
+@router.delete("/delete/{file_name}", response_model=str)
 async def delete_file(file_name: str):
     try:
         file_service.delete_file(file_name)
-        return {"message": f"File '{file_name}' deleted successfully"}
+        return file_name
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="File not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# 파일 목록
 @router.get("/files", response_model=List[str])
 async def get_file_list():
     try:

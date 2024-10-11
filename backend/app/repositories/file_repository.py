@@ -5,9 +5,9 @@ from app.config import FILE_DIRECTORY
 
 
 class FileRepository:
-    def __init__(self, file_directory: str):
+    def __init__(self, file_directory: str = None):
         if file_directory is None:
-            file_directory = os.environ.get("FILE_DIRECTORY")
+            file_directory = FILE_DIRECTORY
 
         self.file_directory = file_directory
 
@@ -24,7 +24,3 @@ class FileRepository:
 
     def list_files(self) -> List[str]:
         return os.listdir(self.file_directory)
-
-
-def get_file_repository() -> FileRepository:
-    return FileRepository(FILE_DIRECTORY)

@@ -4,7 +4,7 @@ WORKDIR /app
 
 ARG ARCHIVE_PATH=/app/dataset_archive
 
-COPY ./app/requirements.txt /app/requirements.txt
+COPY requirements.txt /app/requirements.txt
 
 RUN pip install --no-cache-dir -r /app/requirements.txt
 

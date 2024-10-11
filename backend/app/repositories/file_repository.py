@@ -1,6 +1,7 @@
 import os
 import aiofiles
 from typing import List
+from app.config import FILE_DIRECTORY
 
 
 class FileRepository:
@@ -26,5 +27,4 @@ class FileRepository:
 
 
 def get_file_repository() -> FileRepository:
-    file_directory = os.environ.get("FILE_DIRECTORY")
-    return FileRepository(file_directory)
+    return FileRepository(FILE_DIRECTORY)

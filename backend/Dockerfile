@@ -1,14 +1,15 @@
 FROM python:3.11-slim
 
-WORKDIR /app
+WORKDIR /src
 
-ARG ARCHIVE_PATH=/app/dataset_archive
+ARG ARCHIVE_PATH=/src/dataset_archive
 
-COPY requirements.txt /app/requirements.txt
+COPY ./requirements.txt /src/requirements.txt
 
-RUN pip install --no-cache-dir -r /app/requirements.txt
+RUN pip install --no-cache-dir -r /src/requirements.txt
 
-COPY ./app /app
+COPY ./app /src/app
+COPY ./main.py /src/main.py
 
 RUN mkdir -p $ARCHIVE_PATH && chmod 777 $ARCHIVE_PATH
 

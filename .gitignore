@@ -1,6 +1,10 @@
 ## common ignore files
 .idea/
 
+## backend ignore files
+.venv/
+__pycache__/
+
 ## dashboard ignore files
 # dependencies
 node_modules/

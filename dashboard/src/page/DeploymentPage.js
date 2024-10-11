@@ -12,6 +12,10 @@ function DeploymentPage() {
     {
       key: '1',
       modelVersion: '1.0',
+      precision: '45',
+      recall: '10',
+      map50: '1',
+      map95: '1',
       creationDate: '2024-01-01',
       dataCount: 100,
       checked: false,
@@ -106,13 +110,32 @@ function DeploymentPage() {
         {record.current ? <CheckCircleOutlined style={{ color: 'green', marginRight: 8 }} /> : null}
         {text}
       </span>
-    ),
+      ),
+    },
+    {
+      title: "정밀도",
+      dataIndex: 'precision',
+      key: 'precision',
+    },
+      {
+      title: "재현율",
+      dataIndex: 'recall',
+      key: 'recall',
+    },
+      {
+      title: "mAP@0.5",
+      dataIndex: 'map50',
+      key: 'map50',
+    },
+      {
+      title: "mAP@0.5:0.95",
+      dataIndex: 'map95',
+      key: 'map95',
     },
       {
       title: '생성 날짜',
       dataIndex: 'creationDate',
       key: 'creationDate',
-      width: 300,
     },
   ];
 

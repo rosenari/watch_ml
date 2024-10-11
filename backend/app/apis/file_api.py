@@ -32,7 +32,7 @@ async def delete_file(file_name: str):
 
 
 # 파일 목록
-@router.get("/files", response_model=List[str])
+@router.get("/files", response_model=List[dict])
 async def get_file_list():
     try:
         return file_service.get_file_list()

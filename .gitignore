@@ -2,6 +2,7 @@
 .idea/
 
 ## backend ignore files
+dataset_archive/
 .venv/
 __pycache__/
 

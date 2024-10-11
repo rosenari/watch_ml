@@ -1,10 +1,10 @@
 from typing import List
 from fastapi import UploadFile, Depends
-from app.repositories.file_repository import FileRepository, get_file_repository
+from app.repositories.file_repository import FileRepository
 
 
 class FileService:
-    def __init__(self, repository: FileRepository = Depends(get_file_repository)):
+    def __init__(self, repository: FileRepository):
         self.repository = repository
 
     async def upload_file(self, file: UploadFile) -> str:

@@ -32,7 +32,7 @@ function Dashboard() {
   };
 
   return (
-      <Layout style={{ minHeight: '100vh' }}>
+      <Layout style={{ minHeight: '100vh' }} className='navbar_frame'>
         {/* 좌측 사이드바 */}
         <Sider
           width={200}
@@ -64,7 +64,7 @@ function Dashboard() {
             }}
           />
         </Sider>
-        <Layout style={{ padding: '0 24px 24px' }}>
+        <Layout style={{ padding: '0 24px 24px',minHeight: '100vh'}} className="page_frame">
           <Header
             style={{
               background: '#fff',

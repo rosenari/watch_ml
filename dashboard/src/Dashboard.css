@@ -1,0 +1,33 @@
+body {
+  margin: 0;
+  font-family: 'Arial', sans-serif;
+  background-color: #fff;
+}
+
+.ant-layout {
+  background: #fff !important;
+}
+
+.ant-layout-content {
+  background: #fff !important;
+}
+
+.ant-menu {
+  background-color: #fff;
+}
+
+.ant-layout-header {
+  background: #fff;
+}
+
+.ant-menu-item {
+  border-radius: 0 !important;
+}
+
+.ant-menu-item-selected {
+  border-radius: 0 !important;
+}
+
+.ant-menu-item:hover {
+  border-radius: 0 !important;
+}

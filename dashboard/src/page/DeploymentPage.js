@@ -146,7 +146,7 @@ function DeploymentPage() {
 
       {/* 업로드 및 초기화 버튼을 오른쪽으로 배치 */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-        <Button className="upload-button" size="small" type="default" onClick={handleUpload} style={{ marginRight: '10px' }}>
+        <Button className="upload-button" size="small" type="default" onClick={handleUpload} style={{ marginRight: '5px' }}>
           업로드
         </Button>
           <Button className="reset-button" size="small" type="default" onClick={handleReset}>
@@ -156,17 +156,20 @@ function DeploymentPage() {
 
       {/* 데이터셋 테이블 */}
       <div style={{ marginBottom: '20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
           <h3 className="table-title">데이터셋</h3>
-          <Button type="default" size="small" className="table-button">학습</Button>
+          <div>
+            <Button type="default" size="small" className="table-button" style={{ marginRight: '5px' }}>모델생성</Button>
+            <Button type="default" size="small" className="table-button">파일삭제</Button>
+          </div>
         </div>
         <Table
-          className="custom-table" // 클래스 추가
-          rowSelection={datasetRowSelection} // rowSelection 추가
-          columns={datasetColumns}
-          dataSource={datasetData}
-          locale={{ emptyText: '목록 없음' }}
-          pagination={false}
+            className="custom-table" // 클래스 추가
+            rowSelection={datasetRowSelection} // rowSelection 추가
+            columns={datasetColumns}
+            dataSource={datasetData}
+            locale={{emptyText: '목록 없음'}}
+            pagination={false}
         />
       </div>
 

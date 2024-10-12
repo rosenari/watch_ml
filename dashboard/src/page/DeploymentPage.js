@@ -22,9 +22,9 @@ function DeploymentPage() {
       checked: false,
       current: true,
     },*/
-  ]); // 모델 테이블의 데이터
-  const [selectedModelKeys, setSelectedModelKeys] = useState([]); // 모델 테이블의 선택된 행
-  const [fileList, setFileList] = useState([]); // 선택된 파일들을 저장할 상태
+  ]);
+  const [selectedModelKeys, setSelectedModelKeys] = useState([]); 
+  const [fileList, setFileList] = useState([]); 
 
   useEffect(() => {
     reloadFileList();
@@ -50,7 +50,6 @@ function DeploymentPage() {
 
   // 파일 업로드 처리
   const handleUpload = async () => {
-    // 업로드할 파일이 없을 경우 메시지 출력
     if (fileList.length === 0) {
       message.warning('업로드할 파일이 없습니다.');
       return;
@@ -80,7 +79,7 @@ function DeploymentPage() {
 
   // 파일 리스트 초기화
   const handleReset = () => {
-    setFileList([]); // 파일 리스트 초기화
+    setFileList([]); 
     message.success('파일 목록이 초기화되었습니다.');
   };
 
@@ -109,9 +108,9 @@ function DeploymentPage() {
   const uploadProps = {
     beforeUpload: (file) => {
       setFileList(prevList => [...prevList, file]);
-      return false; // 자동 업로드 방지
+      return false; 
     },
-    fileList, // 현재 선택된 파일 목록 표시
+    fileList,
     onRemove: (file) => {
       setFileList(prevList => prevList.filter(item => item.uid !== file.uid)); // 파일 제거 처리
     },

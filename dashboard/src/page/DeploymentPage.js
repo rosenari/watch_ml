@@ -37,7 +37,8 @@ function DeploymentPage() {
         return {
           key: file.file_name,
           fileName: file.file_name,
-          uploadDate: file.creation_date
+          uploadDate: file.creation_date,
+          fileSize: file.file_size
         }
       });
       
@@ -124,10 +125,16 @@ function DeploymentPage() {
       key: 'fileName',
     },
     {
+      title: '파일 크기',
+      dataIndex: 'fileSize',
+      key: 'fileSize',
+      width: 200,
+    },
+    {
       title: '업로드 날짜',
       dataIndex: 'uploadDate',
       key: 'uploadDate',
-      width: 300,
+      width: 200,
     }
   ];
 

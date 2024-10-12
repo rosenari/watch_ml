@@ -23,8 +23,8 @@ def file_service(temp_directory):
 def temp_file_in_directory(temp_directory):
     temp_file_path = os.path.join(temp_directory, "temp_test_file.txt")
     with open(temp_file_path, "wb") as temp_file:
-        yield temp_file_path
-
+        temp_file.write(b'test file')
+    yield temp_file_path
 
 @pytest.mark.asyncio
 async def test_upload_file(file_service, temp_directory, temp_file_in_directory):
@@ -45,7 +45,8 @@ async def test_upload_file(file_service, temp_directory, temp_file_in_directory)
     assert saved_content == file_content
 
 
-def test_delete_file(file_service, temp_directory, temp_file_in_directory):
+def test_delete_file(file_service, temp_file_in_directory):
+    print(temp_file_in_directory)
     assert os.path.exists(temp_file_in_directory)
 
     file_service.delete_file(os.path.basename(temp_file_in_directory))

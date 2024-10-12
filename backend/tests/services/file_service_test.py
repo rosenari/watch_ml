@@ -60,5 +60,6 @@ def test_get_file_list(file_service, temp_directory):
             f.write("test content")
 
     file_list = file_service.get_file_list()
+    file_list = [file['file_name'] for file in file_list]
 
     assert sorted(file_list) == sorted(file_names)

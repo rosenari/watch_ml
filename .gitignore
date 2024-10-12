@@ -3,6 +3,7 @@
 
 ## backend ignore files
 dataset_archive/
+mlruns/
 .venv/
 __pycache__/
 

@@ -202,7 +202,7 @@ function DeploymentPage() {
         <p className="ant-upload-drag-icon">
           <InboxOutlined />
         </p>
-        <p className="ant-upload-text">데이터셋 파일을 업로드하세요</p>
+        <p className="ant-upload-text">데이터셋 아카이브를 업로드하세요 (zip)</p>
       </Dragger>
 
       {/* 업로드 및 초기화 버튼을 오른쪽으로 배치 */}

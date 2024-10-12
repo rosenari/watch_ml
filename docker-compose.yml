@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build:
@@ -7,12 +5,28 @@ services:
       dockerfile: Dockerfile.dev
     container_name: fastapi
     ports:
-      - "8000:8000"
+      - '8000:8000'
     volumes:
-      - "./backend/app:/src/app"
-      - "./backend/dataset_archive:/src/dataset_archive"
-      - "./backend/main.py:/src/main.py"
+      - './backend/app:/src/app'
+      - './backend/dataset_archive:/src/dataset_archive'
+      - './backend/main.py:/src/main.py'
     environment:
       - PYTHONUNBUFFERED=1
       - FILE_DIRECTORY=/src/dataset_archive
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - monitoring_network
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.16.2
+    environment:
+      - MLFLOW_TRACKING_URI=http://0.0.0.0:5000
+    volumes:
+      - ./backend/mlruns:/mlflow/mlruns
+    ports:
+      - '5000:5000'
+    command: mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root /mlflow/mlruns --host 0.0.0.0
+    networks:
+      - monitoring_network
+
+networks:
+  monitoring_network:

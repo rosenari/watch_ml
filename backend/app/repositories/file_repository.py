@@ -2,7 +2,9 @@ import os
 import aiofiles
 from typing import List, Dict
 from app.config import FILE_DIRECTORY
+from app.util import format_file_size
 from datetime import datetime, timezone, timedelta
+
 
 
 class FileRepository:
@@ -32,12 +34,15 @@ class FileRepository:
         for file_name in os.listdir(self.file_directory):
             file_path = os.path.join(self.file_directory, file_name)
             creation_time = os.path.getctime(file_path)
+            file_size = os.path.getsize(file_path)
+            formatted_size = format_file_size(file_size)
 
             # 한국 시간대로 변환
             creation_date = datetime.fromtimestamp(creation_time, tz=kst).strftime('%Y-%m-%d %H:%M:%S')
 
             file_list.append({
                 "file_name": file_name,
-                "creation_date": creation_date
+                "creation_date": creation_date,
+                "file_size": formatted_size
             })
         return file_list

@@ -10,7 +10,7 @@ function DeploymentPage() {
   const [datasetData, setDatasetData] = useState([]); // 데이터셋 테이블의 데이터
   const [selectedDatasetKeys, setSelectedDatasetKeys] = useState([]); // 데이터셋 테이블의 선택된 행
   const [modelData, setModelData] = useState([
-    {
+    /*{
       key: '1',
       modelVersion: '1.0',
       precision: '45',
@@ -21,7 +21,7 @@ function DeploymentPage() {
       dataCount: 100,
       checked: false,
       current: true,
-    },
+    },*/
   ]); // 모델 테이블의 데이터
   const [selectedModelKeys, setSelectedModelKeys] = useState([]); // 모델 테이블의 선택된 행
   const [fileList, setFileList] = useState([]); // 선택된 파일들을 저장할 상태
@@ -51,7 +51,7 @@ function DeploymentPage() {
   const handleUpload = async () => {
     // 업로드할 파일이 없을 경우 메시지 출력
     if (fileList.length === 0) {
-      message.error('업로드할 파일이 없습니다.');
+      message.warning('업로드할 파일이 없습니다.');
       return;
     }
 
@@ -84,6 +84,10 @@ function DeploymentPage() {
   };
 
   const handleDelete = async () => {
+    if (selectedDatasetKeys.length === 0) {
+      message.warning('삭제할 파일을 지정하지 않았습니다.');
+    }
+
     for (const fileName of selectedDatasetKeys) {
       try {
         const result = await deleteFile(fileName);

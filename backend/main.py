@@ -13,5 +13,6 @@ app.add_middleware(
     allow_headers=["*"],  # 모든 헤더 허용
 )
 
+
 # 파일 관련 API 라우터 등록
 app.include_router(file_api.router, prefix="/files")

@@ -1,6 +1,8 @@
 import os
 import zipfile
 import yaml
+import redis
+
 
 image_extensions = {'.jpg', '.jpeg', '.png', '.bmp'}
 

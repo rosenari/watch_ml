@@ -6,6 +6,7 @@ dataset_archive/
 mlruns/
 .venv/
 __pycache__/
+.pytest_cache/
 
 ## dashboard ignore files
 # dependencies

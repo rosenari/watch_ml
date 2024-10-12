@@ -220,6 +220,7 @@ function DeploymentPage() {
         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
           <h3 className="table-title">데이터셋</h3>
           <div>
+            <Button type="default" size="small" className="table-button" style={{ marginRight: '5px' }}>파일검사</Button>
             <Button type="default" size="small" className="table-button" style={{ marginRight: '5px' }}>모델생성</Button>
             <Button type="default" size="small" className="table-button" onClick={handleDelete}>파일삭제</Button>
           </div>

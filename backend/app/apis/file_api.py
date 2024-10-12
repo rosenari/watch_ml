@@ -3,6 +3,8 @@ from typing import List
 from app.services.file_service import FileService
 from app.repositories.file_repository import FileRepository
 from app.validation import validate_zip_file
+from app.database import get_redis
+from app.tasks.main import valid_archive
 
 
 router = APIRouter()
@@ -36,5 +38,17 @@ async def delete_file(file_name: str):
 async def get_file_list():
     try:
         return file_service.get_file_list()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post('/validation', response_model=dict)
+async def valid_file(file_name: str, ri = Depends(get_redis)):
+    try:
+        key = f"valid:{file_name}"
+        await ri.set(key, "pending")
+        valid_archive.delay(file_name)
+
+        return { 'result': True }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, Table, Button, message } from 'antd';
-import { InboxOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { InboxOutlined, CheckOutlined, LoadingOutlined } from '@ant-design/icons';
 import { fileUpload, getFileList, deleteFile } from '../api/files';
+import { Spin } from 'antd';
 import './DeploymentPage.css';  // 스타일 추가
 
 const { Dragger } = Upload;
@@ -122,6 +123,14 @@ function DeploymentPage() {
       title: '파일 이름',
       dataIndex: 'fileName',
       key: 'fileName',
+      render: (text, record) => {
+        return (<div>
+          <span style={{ marginRight: '8px' }}>{text}</span>
+          <CheckOutlined style={{ color: 'green', marginRight: 8 }} />
+          <Spin indicator={<LoadingOutlined spin />} size="small" />
+          <span style={{ marginLeft: '8px' }}>파일 검사중</span>
+        </div>);
+      }
     },
     {
       title: '파일 크기',
@@ -145,7 +154,7 @@ function DeploymentPage() {
       key: 'modelVersion',
       render: (text, record) => (
       <span>
-        {record.current ? <CheckCircleOutlined style={{ color: 'green', marginRight: 8 }} /> : null}
+        {record.current ? <CheckOutlined style={{ color: 'green', marginRight: 8 }} /> : null}
         {text}
       </span>
       ),

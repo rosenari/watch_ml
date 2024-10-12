@@ -20,7 +20,7 @@ async def upload_file(file: UploadFile = Depends(validate_zip_file)):
 
 
 # 파일 삭제
-@router.delete("/delete/{file_name}", response_model=dict)
+@router.delete("/{file_name}", response_model=dict)
 async def delete_file(file_name: str):
     try:
         file_service.delete_file(file_name)
@@ -32,7 +32,7 @@ async def delete_file(file_name: str):
 
 
 # 파일 목록
-@router.get("/files", response_model=List[dict])
+@router.get("/list", response_model=List[dict])
 async def get_file_list():
     try:
         return file_service.get_file_list()

@@ -50,7 +50,7 @@ function Dashboard() {
               fontWeight: 'bold',
             }}
           >
-            교통 모니터링 시스템
+            실시간 모니터링 시스템
           </div>
           <Menu
             mode="inline"

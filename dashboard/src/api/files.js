@@ -14,3 +14,26 @@ export async function fileUpload(file) {
         throw new Error(response.statusText);
     }
 }
+
+export async function getFileList() {
+    const response = await fetch('http://localhost:8000/files/list');
+    
+    if (response.ok) {
+        const list = await response.json();
+        return list;
+    } else {
+        throw new Error(response.statusText);
+    }
+}
+
+export async function deleteFile(fileName) {
+    const response = await fetch(`http://localhost:8000/files/${fileName}`, {
+        method: 'DELETE'
+    });
+
+    if (response.ok) {
+        return true;
+    } else {
+        throw new Error(response.statusText);
+    }
+}

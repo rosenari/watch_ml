@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Upload, Table, Button, message } from 'antd';
-import { InboxOutlined, CheckOutlined, LoadingOutlined } from '@ant-design/icons';
-import { fileUpload, getFileList, deleteFile } from '../api/files';
+import { InboxOutlined, CheckOutlined, LoadingOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { fileUpload, getFileList, deleteFile, validFiles, getValidFiles } from '../api/files';
+import { useExecuteRepeat } from '../hooks/execute';
 import { Spin } from 'antd';
 import './DeploymentPage.css';  // 스타일 추가
 
@@ -9,7 +10,7 @@ const { Dragger } = Upload;
 
 function DeploymentPage() {
   const [datasetData, setDatasetData] = useState([]); // 데이터셋 테이블의 데이터
-  const [selectedDatasetKeys, setSelectedDatasetKeys] = useState([]); // 데이터셋 테이블의 선택된 행
+  const [selectedDatasetKeys, setSelectedDatasetKeys] = useState([]); // 데이터셋 체크 박스 선택시 갱신
   const [modelData, setModelData] = useState([
     /*{
       key: '1',
@@ -24,30 +25,58 @@ function DeploymentPage() {
       current: true,
     },*/
   ]);
-  const [selectedModelKeys, setSelectedModelKeys] = useState([]); 
   const [fileList, setFileList] = useState([]); 
+  const [validDatasetData, setValidDatasetData] = useState([]); // 파일 검사 상태 [{ file_name: ..., status: .... }]
+  const { executeRepeat, stopExecution } = useExecuteRepeat();
+  const [selectedModelKeys, setSelectedModelKeys] = useState([]); // 모델 체크 박스 선택시 갱신
 
-  useEffect(() => {
-    reloadFileList();
-  }, []);
-
-  const reloadFileList = async () => {
+  const reloadFileList = useCallback(async () => {
     try {
       const list = await getFileList();
+      const validDatasetDataMap = validDatasetData.reduce((acc, { file_name, status }) => {
+        acc[file_name] = status;
+        return acc;
+      }, {});
+
       const formatted_list = list.map((file, i) => {
         return {
           key: file.file_name,
           fileName: file.file_name,
           uploadDate: file.creation_date,
-          fileSize: file.file_size
+          fileSize: file.file_size,
+          valid: (file.file_name in validDatasetDataMap) ? validDatasetDataMap[file.file_name] : ''
         }
       });
-      
+    
       setDatasetData([...formatted_list]);
-    } catch {
-      message.error(`파일 목록 불러오기 실패`);
+    } catch (e) {
+      console.error(`파일 목록 불러오기 실패: ${e}`);
+      stopExecution();
     }
-  }
+  }, [validDatasetData, stopExecution]);
+
+  const logicToPolling = useCallback(async () => {
+    const validFiles = await getValidFiles();
+    setValidDatasetData([...validFiles]);
+  }, []);
+
+  useEffect(() => {
+    if (validDatasetData.length > 0) {
+      reloadFileList();
+      const filterData = validDatasetData.filter((data) => (data.status === 'pending' || data.status === 'running'));
+      if (filterData.length === 0) {
+        stopExecution();
+      }
+    }
+  }, [validDatasetData, reloadFileList, stopExecution]);
+
+  const startValidFilesPolling = useCallback(() => {
+    executeRepeat(logicToPolling, 1000);
+  }, [executeRepeat, logicToPolling]);
+
+  useEffect(() => {
+    startValidFilesPolling();
+  }, [startValidFilesPolling]);
 
   // 파일 업로드 처리
   const handleUpload = async () => {
@@ -59,22 +88,18 @@ function DeploymentPage() {
     for (const file of fileList) {
       try {
         const data = await fileUpload(file);
-        console.log(data);
+
         if (data.file_name !== file.name) {
-          console.log(file.name);
           throw new Error('정상적으로 업로드 되지 않음.');
         }
 
         message.success(`${file.name} 업로드 성공`);
         reloadFileList();
       } catch (error) {
-        console.log(error);
+        console.error(error);
         message.error(`${file.name} 업로드 실패`);
       }
-
-      
     }
-
     setFileList([]);
   };
 
@@ -105,6 +130,16 @@ function DeploymentPage() {
     reloadFileList();
   }
 
+  const handleValid = async () => {
+    if (selectedDatasetKeys.length === 0) {
+      message.warning('검사할 파일을 지정하지 않았습니다.');
+    }
+
+    validFiles(selectedDatasetKeys); // 파일 검사 요청
+    setSelectedDatasetKeys([]);
+    startValidFilesPolling();
+  }
+
   // 업로드 파일 선택 후 일시적으로 저장 (업로드 버튼을 눌렀을 때만 업로드)
   const uploadProps = {
     beforeUpload: (file) => {
@@ -124,12 +159,16 @@ function DeploymentPage() {
       dataIndex: 'fileName',
       key: 'fileName',
       render: (text, record) => {
-        return (<div>
+        return (
+        <div>
           <span style={{ marginRight: '8px' }}>{text}</span>
-          <CheckOutlined style={{ color: 'green', marginRight: 8 }} />
-          <Spin indicator={<LoadingOutlined spin />} size="small" />
-          <span style={{ marginLeft: '8px' }}>파일 검사중</span>
-        </div>);
+          {record.valid === 'complete' && <CheckOutlined style={{ color: 'green', marginRight: 8 }} />}
+          {record.valid === 'failed' && <ExclamationCircleOutlined style={{ color: 'red', marginRight: 8 }} />}
+          {(record.valid === 'running' || record.valid === 'pending') && <Spin indicator={<LoadingOutlined spin />} size="small" />}
+          {record.valid === 'running' && <span style={{ marginLeft: '8px' }}>검사 중</span>}
+          {record.valid === 'pending' && <span style={{ marginLeft: '8px' }}>대기 중</span>}
+        </div>
+        );
       }
     },
     {
@@ -229,7 +268,7 @@ function DeploymentPage() {
         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
           <h3 className="table-title">데이터셋</h3>
           <div>
-            <Button type="default" size="small" className="table-button" style={{ marginRight: '5px' }}>파일검사</Button>
+            <Button type="default" size="small" className="table-button" style={{ marginRight: '5px' }} onClick={handleValid}>파일검사</Button>
             <Button type="default" size="small" className="table-button" style={{ marginRight: '5px' }}>모델생성</Button>
             <Button type="default" size="small" className="table-button" onClick={handleDelete}>파일삭제</Button>
           </div>

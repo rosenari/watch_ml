@@ -7,9 +7,7 @@ from app.database import get_redis
 
 @pytest_asyncio.fixture
 async def redis():
-    os.environ['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
-
-    async for ri in get_redis():
+    async for ri in get_redis('redis://localhost:6379/0'):
         yield ri
 
 

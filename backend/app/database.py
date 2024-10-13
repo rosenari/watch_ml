@@ -1,10 +1,11 @@
 import os
 from redis.asyncio import from_url
+from app.config import CELERY_BROKER_URL
 
 
 async def get_redis(url=None):
     if url is None:
-        url = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
+        url = CELERY_BROKER_URL
 
     redis = await from_url(url)
 

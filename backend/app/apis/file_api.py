@@ -2,6 +2,7 @@ from fastapi import APIRouter, UploadFile, HTTPException, Depends
 from typing import List
 from app.services.file_service import FileService
 from app.repositories.file_repository import FileRepository
+from app.apis.models import FileValidationRequest
 from app.validation import validate_zip_file
 from app.database import get_redis
 from app.tasks.main import valid_archive
@@ -43,11 +44,11 @@ async def get_file_list():
 
 
 @router.post('/validation', response_model=dict)
-async def valid_file(file_name: str, ri = Depends(get_redis)):
+async def valid_file(request: FileValidationRequest, ri = Depends(get_redis)):
     try:
-        key = f"valid:{file_name}"
+        key = f"valid:{request.file_name}"
         await ri.set(key, "pending")
-        valid_archive.delay(file_name)
+        valid_archive.delay(request.file_name)
 
         return { 'result': True }
     except Exception as e:

@@ -1,5 +1,4 @@
 import pytest
-import os
 import pytest_asyncio
 from app.database import get_redis
 

@@ -1,9 +1,17 @@
 import os
 import pytest
 import tempfile
+import pytest_asyncio
+from app.database import get_redis
 from fastapi import UploadFile
 from app.services.file_service import FileService
 from app.repositories.file_repository import FileRepository
+
+
+@pytest_asyncio.fixture
+async def redis():
+    async for ri in get_redis('redis://localhost:6379/0'):
+        yield ri
 
 
 @pytest.fixture
@@ -13,9 +21,9 @@ def temp_directory():
 
 
 @pytest.fixture
-def file_service(temp_directory):
+def file_service(temp_directory, redis):
     repository = FileRepository(file_directory=temp_directory)
-    service = FileService(repository=repository)
+    service = FileService(repository=repository, redis=redis)
     return service
 
 

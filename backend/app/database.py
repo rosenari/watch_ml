@@ -1,4 +1,3 @@
-import os
 from redis.asyncio import from_url
 from app.config import CELERY_BROKER_URL
 

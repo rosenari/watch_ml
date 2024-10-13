@@ -30,17 +30,17 @@ services:
       - monitoring_network
   celery_worker:
     build:
-      context: ./backend/app/tasks
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile.worker
     depends_on:
       - redis
     volumes:
-      - './backend/dataset_archive:/app/dataset_archive'
+      - './backend/dataset_archive:/src/dataset_archive'
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_ARCHIVE_PATH=/app/dataset_archive
+      - CELERY_ARCHIVE_PATH=/src/dataset_archive
       - VALID_ARCHIVE_MODULE_PATH=valid_archive
-    command: celery -A main worker --loglevel=info
+    command: celery -A app.tasks.main worker --loglevel=info --concurrency=1
     networks:
       - monitoring_network
   redis:

@@ -61,17 +61,15 @@ function DeploymentPage() {
   }, []);
 
   useEffect(() => {
-    if (validDatasetData.length > 0) {
-      reloadFileList();
-      const filterData = validDatasetData.filter((data) => (data.status === 'pending' || data.status === 'running'));
-      if (filterData.length === 0) {
-        stopExecution();
-      }
+    reloadFileList();
+    const filterData = validDatasetData.filter((data) => (data.status === 'pending' || data.status === 'running'));
+    if (filterData.length === 0) {
+      stopExecution();
     }
   }, [validDatasetData, reloadFileList, stopExecution]);
 
   const startValidFilesPolling = useCallback(() => {
-    executeRepeat(logicToPolling, 1000);
+    executeRepeat(logicToPolling, 500);
   }, [executeRepeat, logicToPolling]);
 
   useEffect(() => {
@@ -165,8 +163,6 @@ function DeploymentPage() {
           {record.valid === 'complete' && <CheckOutlined style={{ color: 'green', marginRight: 8 }} />}
           {record.valid === 'failed' && <ExclamationCircleOutlined style={{ color: 'red', marginRight: 8 }} />}
           {(record.valid === 'running' || record.valid === 'pending') && <Spin indicator={<LoadingOutlined spin />} size="small" />}
-          {record.valid === 'running' && <span style={{ marginLeft: '8px' }}>검사 중</span>}
-          {record.valid === 'pending' && <span style={{ marginLeft: '8px' }}>대기 중</span>}
         </div>
         );
       }

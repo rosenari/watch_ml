@@ -38,7 +38,7 @@ async def get_valid_file_list_from_redis(redis, prefix: str = "valid:") -> list:
             decoded_keys = [key.decode('utf-8') for key in keys]
             values = await redis.mget(*keys)
 
-        for key, value in zip(decoded_keys, values):
-                result.append({ 'file_name': key.replace("valid:", ""), 'status': value.decode('utf-8') if value else None })
+            for key, value in zip(decoded_keys, values):
+                    result.append({ 'file_name': key.replace("valid:", ""), 'status': value.decode('utf-8') if value else None })
 
     return result

@@ -2,7 +2,7 @@ import os
 import pytest
 import zipfile
 from io import BytesIO
-from app.tasks.valid_archive import parse_and_verify_zip, verify_yolo_dataset, check_yolo_format
+from app.tasks.valid.valid_archive import parse_and_verify_zip
 
 
 # 가상의 이미지 파일과 txt 파일 목록

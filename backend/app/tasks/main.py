@@ -1,6 +1,6 @@
 from celery import Celery
 from app.config import CELERY_BROKER_URL, CELERY_ARCHIVE_PATH
-from app.tasks.valid_archive import parse_and_verify_zip
+from backend.app.tasks.valid.valid_archive import parse_and_verify_zip
 import redis
 
 

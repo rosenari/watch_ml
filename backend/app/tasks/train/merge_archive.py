@@ -6,6 +6,10 @@ import tempfile
 import random
 import math
 import hashlib
+import logging
+
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 # 병합 디렉터리 생성 (images와 labels 디렉터리 아래에 train, val, test 생성)
@@ -181,68 +185,83 @@ def update_label(src_label_file, dest_label_file, class_mapping):
 
 # 아카이브 파일 병합
 def merge_archive_files(zip_files, output_dir):
-    merged_dirs = create_output_dirs(output_dir)
-    merged_classes = {
-        'train': set(),
-        'val': set(),
-        'test': set()
-    }
-    merged_data_store_path = {
-        'train': merged_dirs['images']['train'],
-        'val': merged_dirs['images']['val'],
-        'test': merged_dirs['images']['test']
-    }
+    result = True
 
-    for zip_file in zip_files:
-        temp_dir = extract_zip_to_temp(zip_file)  # 임시 폴더에 압축 해제
-        yaml_path = find_yaml_path(temp_dir.name)  # data.yaml 경로 얻기
-        hash = hashlib.md5(temp_dir.name.encode()).hexdigest()
+    try:
+        merged_dirs = create_output_dirs(output_dir)
+        merged_classes = {
+            'train': set(),
+            'val': set(),
+            'test': set()
+        }
+        merged_data_store_path = {
+            'train': merged_dirs['images']['train'],
+            'val': merged_dirs['images']['val'],
+            'test': merged_dirs['images']['test']
+        }
 
-        if yaml_path:
-            data = load_data_yaml(yaml_path)
-            for key in ['train', 'val', 'test']:
-                if key not in data:
-                    continue
+        for zip_file in zip_files:
+            temp_dir = extract_zip_to_temp(zip_file)  # 임시 폴더에 압축 해제
+            yaml_path = find_yaml_path(temp_dir.name)  # data.yaml 경로 얻기
+            hash = hashlib.md5(temp_dir.name.encode()).hexdigest()
 
-                # 이미지 복사
-                source_image_dir = os.path.join(temp_dir.name, data[key])
-
-                if len(os.listdir(source_image_dir)) == 0:
-                    continue
-
-                copy_files(source_image_dir, merged_dirs['images'][key], file_prefix=hash)
-
-                source_label_dir = os.path.join(temp_dir.name, data[key].replace('images', 'labels'))
-
-                # 라벨의 인덱스를 모두 class명으로 수정 및 merged_classes 갱신
-                index_to_class = get_class_mapper(source_label_dir)
-
-                # 라벨 파일의 인덱스 정보를 클래스 이름으로 변환하여 dest에 저장
-                for label_file in os.listdir(source_label_dir):
-                    src_label_file = os.path.join(source_label_dir, label_file)
-
-                    if label_file == 'classes.txt':
-                        merged_classes[key] = merge_classes_per_split(os.path.join(source_label_dir, label_file), merged_classes[key])
+            if yaml_path:
+                data = load_data_yaml(yaml_path)
+                for key in ['train', 'val', 'test']:
+                    if key not in data:
                         continue
 
-                    dest_label_file = os.path.join(merged_dirs['labels'][key], f"{hash}_{label_file}")
-                    update_label(src_label_file, dest_label_file, index_to_class)  # index to class
-        temp_dir.cleanup()    
+                    # 이미지 복사
+                    source_image_dir = os.path.join(temp_dir.name, data[key])
 
-    if len(os.listdir(merged_data_store_path['test'])) == 0:
-        split_train_to_test(merged_dirs)
+                    if len(os.listdir(source_image_dir)) == 0:
+                        continue
 
-    total_classes = write_merged_classes(output_dir, merged_classes) 
-    class_to_index = {class_name: str(i) for i, class_name in enumerate(total_classes)}
+                    logging.info(f"[Copy files] source: {source_image_dir}, dest: {merged_dirs['images'][key]}")
+                    copy_files(source_image_dir, merged_dirs['images'][key], file_prefix=hash)
 
-    for key in ['train', 'val', 'test']:
-        for label_file in os.listdir(merged_dirs['labels'][key]):
-            if label_file == 'classes.txt':
-                continue
-            
-            dest_label_file = os.path.join(merged_dirs['labels'][key], label_file)
-            update_label(dest_label_file, dest_label_file, class_to_index)  # class to index
+                    source_label_dir = os.path.join(temp_dir.name, data[key].replace('images', 'labels'))
 
-    write_merged_data_yaml(output_dir, merged_data_store_path, total_classes) 
+                    # 라벨의 인덱스를 모두 class명으로 수정 및 merged_classes 갱신
+                    index_to_class = get_class_mapper(source_label_dir)
 
-    print(f'Merged data.yaml and classes.txt have been created in {output_dir}')
+                    # 라벨 파일의 인덱스 정보를 클래스 이름으로 변환하여 dest에 저장
+                    for label_file in os.listdir(source_label_dir):
+                        src_label_file = os.path.join(source_label_dir, label_file)
+
+                        if label_file == 'classes.txt':
+                            merged_classes[key] = merge_classes_per_split(os.path.join(source_label_dir, label_file), merged_classes[key])
+                            continue
+                        
+                        logging.info("Start updating the label from index to index.")
+                        dest_label_file = os.path.join(merged_dirs['labels'][key], f"{hash}_{label_file}")
+                        update_label(src_label_file, dest_label_file, index_to_class)  # index to class
+            temp_dir.cleanup()    
+
+        if len(os.listdir(merged_data_store_path['test'])) == 0:  # test 데이터가 없다면 train에서 일부를 test로 분리
+            logging.warning("Because test data does not exist, part of the train data is extracted.")
+            split_train_to_test(merged_dirs)
+
+        total_classes = write_merged_classes(output_dir, merged_classes)
+        logging.info("classes.txt has been created.")
+
+        class_to_index = {class_name: str(i) for i, class_name in enumerate(total_classes)}
+
+        logging.info("Start updating the label from class to index.")
+        for key in ['train', 'val', 'test']:
+            for label_file in os.listdir(merged_dirs['labels'][key]):
+                if label_file == 'classes.txt':
+                    continue
+                
+                dest_label_file = os.path.join(merged_dirs['labels'][key], label_file)
+                update_label(dest_label_file, dest_label_file, class_to_index)  # class to index
+
+        write_merged_data_yaml(output_dir, merged_data_store_path, total_classes) 
+        logging.info("data.yaml has been created.")
+
+        logging.info(f'Merged data.yaml and classes.txt have been created in {output_dir}')
+    except Exception as e:
+        result = False
+        logging.error(f"An unexpected error occurred: {e}")
+    finally:
+        return result

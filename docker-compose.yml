@@ -32,15 +32,27 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.worker
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
     depends_on:
       - redis
     volumes:
+      - './backend/app:/src/app'
       - './backend/dataset_archive:/src/dataset_archive'
+      - './backend/mlruns:/src/runs'
     environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_ARCHIVE_PATH=/src/dataset_archive
       - VALID_ARCHIVE_MODULE_PATH=valid_archive
-    command: celery -A app.tasks.main worker --loglevel=info --concurrency=1
+      - CELERY_ML_RUNS_PATH=/src/runs
+    runtime: nvidia
+    shm_size: '1g'
+    command: celery -A app.tasks.main worker --loglevel=info --concurrency=1 --pool=threads
     networks:
       - monitoring_network
   redis:

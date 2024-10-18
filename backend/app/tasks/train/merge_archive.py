@@ -185,6 +185,7 @@ def update_label(src_label_file, dest_label_file, class_mapping):
 
 # 아카이브 파일 병합
 def merge_archive_files(zip_files, output_dir):
+    logging.info("start merge_archive_files")
     result = True
 
     try:
@@ -201,42 +202,45 @@ def merge_archive_files(zip_files, output_dir):
         }
 
         for zip_file in zip_files:
-            temp_dir = extract_zip_to_temp(zip_file)  # 임시 폴더에 압축 해제
-            yaml_path = find_yaml_path(temp_dir.name)  # data.yaml 경로 얻기
-            hash = hashlib.md5(temp_dir.name.encode()).hexdigest()
+            temp_dir = None
+            try:
+                temp_dir = extract_zip_to_temp(zip_file)  # 임시 폴더에 압축 해제
+                yaml_path = find_yaml_path(temp_dir.name)  # data.yaml 경로 얻기
+                hash = hashlib.md5(temp_dir.name.encode()).hexdigest()
 
-            if yaml_path:
-                data = load_data_yaml(yaml_path)
-                for key in ['train', 'val', 'test']:
-                    if key not in data:
-                        continue
-
-                    # 이미지 복사
-                    source_image_dir = os.path.join(temp_dir.name, data[key])
-
-                    if len(os.listdir(source_image_dir)) == 0:
-                        continue
-
-                    logging.info(f"[Copy files] source: {source_image_dir}, dest: {merged_dirs['images'][key]}")
-                    copy_files(source_image_dir, merged_dirs['images'][key], file_prefix=hash)
-
-                    source_label_dir = os.path.join(temp_dir.name, data[key].replace('images', 'labels'))
-
-                    # 라벨의 인덱스를 모두 class명으로 수정 및 merged_classes 갱신
-                    index_to_class = get_class_mapper(source_label_dir)
-
-                    # 라벨 파일의 인덱스 정보를 클래스 이름으로 변환하여 dest에 저장
-                    for label_file in os.listdir(source_label_dir):
-                        src_label_file = os.path.join(source_label_dir, label_file)
-
-                        if label_file == 'classes.txt':
-                            merged_classes[key] = merge_classes_per_split(os.path.join(source_label_dir, label_file), merged_classes[key])
+                if yaml_path:
+                    data = load_data_yaml(yaml_path)
+                    for key in ['train', 'val', 'test']:
+                        if key not in data:
                             continue
-                        
-                        logging.info("Start updating the label from index to index.")
-                        dest_label_file = os.path.join(merged_dirs['labels'][key], f"{hash}_{label_file}")
-                        update_label(src_label_file, dest_label_file, index_to_class)  # index to class
-            temp_dir.cleanup()    
+
+                        # 이미지 복사
+                        source_image_dir = os.path.join(temp_dir.name, data[key])
+
+                        if len(os.listdir(source_image_dir)) == 0:
+                            continue
+
+                        logging.info(f"[Copy files] source: {source_image_dir}, dest: {merged_dirs['images'][key]}")
+                        copy_files(source_image_dir, merged_dirs['images'][key], file_prefix=hash)
+
+                        source_label_dir = os.path.join(temp_dir.name, data[key].replace('images', 'labels'))
+
+                        # 라벨의 인덱스를 모두 class명으로 수정 및 merged_classes 갱신
+                        index_to_class = get_class_mapper(source_label_dir)
+
+                        # 라벨 파일의 인덱스 정보를 클래스 이름으로 변환하여 dest에 저장
+                        for label_file in os.listdir(source_label_dir):
+                            src_label_file = os.path.join(source_label_dir, label_file)
+
+                            if label_file == 'classes.txt':
+                                merged_classes[key] = merge_classes_per_split(os.path.join(source_label_dir, label_file), merged_classes[key])
+                                continue
+                            
+                            dest_label_file = os.path.join(merged_dirs['labels'][key], f"{hash}_{label_file}")
+                            update_label(src_label_file, dest_label_file, index_to_class)  # index to class
+            finally:
+                if temp_dir is not None:
+                    temp_dir.cleanup()
 
         if len(os.listdir(merged_data_store_path['test'])) == 0:  # test 데이터가 없다면 train에서 일부를 test로 분리
             logging.warning("Because test data does not exist, part of the train data is extracted.")

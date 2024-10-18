@@ -83,13 +83,10 @@ def verify_yolo_dataset(data_yaml, zip_ref):
     return True
 
 
-def parse_and_verify_zip(zip_path, status_handler=lambda file_name, status: None):
+def parse_and_verify_zip(zip_path):
     result = True
-    file_name = os.path.basename(zip_path) if isinstance(zip_path, str) else zip_path
 
-    try:
-        status_handler(file_name, "running")
-        
+    try:        
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             with zip_ref.open('data.yaml') as yaml_file:
                 data_yaml = yaml.safe_load(yaml_file)
@@ -101,6 +98,4 @@ def parse_and_verify_zip(zip_path, status_handler=lambda file_name, status: None
         logging.error(f"An unexpected error occurred: {e}")
         result = False
     finally:
-        status = "complete" if result else "failed"
-        status_handler(file_name, status)
         return result

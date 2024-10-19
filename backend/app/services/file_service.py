@@ -1,14 +1,16 @@
 from typing import List
 from fastapi import UploadFile, Depends
+from app.config import FILE_DIRECTORY
 from app.database import get_redis, get_session
 from app.repositories.file_repository import FileRepository
 from app.util import transactional
 
 
 class FileService:
-    def __init__(self, repository: FileRepository, redis):
-        self.repository = repository
+    def __init__(self, redis, session, file_directory=FILE_DIRECTORY):
         self.redis = redis
+        self.session = session
+        self.repository = FileRepository(file_directory=file_directory, db=session)
 
     @transactional
     async def upload_file(self, file: UploadFile) -> str:
@@ -27,8 +29,8 @@ class FileService:
         return await get_valid_file_list_from_redis(self.redis, prefix)
     
 
-async def get_file_service(redis = Depends(get_redis), database = Depends(get_session)):
-    yield FileService(FileRepository(db=database), redis)
+async def get_file_service(redis = Depends(get_redis), session = Depends(get_session)):
+    yield FileService(redis, session)
 
 
 async def get_valid_file_list_from_redis(redis, prefix: str = "valid:") -> list:

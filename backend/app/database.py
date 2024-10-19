@@ -1,7 +1,7 @@
 from redis.asyncio import from_url
 from app.config import CELERY_BROKER_URL
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import SQLALCHEMY_DATABASE_URL
 

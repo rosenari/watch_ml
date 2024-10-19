@@ -30,7 +30,6 @@ class FileRepository:
             filesize=file_size
         )
         self.db.add(file_record)
-        await self.db.commit()
         return file_name
 
     async def delete_file(self, file_name: str) -> None:
@@ -41,7 +40,6 @@ class FileRepository:
             raise FileNotFoundError("File not found in database.")
         
         file_record.is_delete = True
-        await self.db.commit()
 
     async def list_files(self) -> List[Dict[str, str]]:
         file_list = []

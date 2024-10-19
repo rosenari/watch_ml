@@ -6,7 +6,14 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print('create_tables')
+    await create_tables()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,12 +29,6 @@ async def global_exception_handler(request, exc: Exception):
         status_code=500,
         content={"message": "서버에서 알 수 없는 에러가 발생했습니다."},
     )
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await create_tables()
-    yield
 
 
 # 파일 관련 API 라우터 등록

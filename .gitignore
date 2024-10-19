@@ -8,6 +8,7 @@ mlruns/
 __pycache__/
 .pytest_cache/
 merged_output/
+db/
 
 ## dashboard ignore files
 # dependencies

@@ -8,3 +8,24 @@ def format_file_size(size_in_bytes: int) -> str:
             return f"{size_in_bytes / (1024 ** 2):.2f} MB"
         else:
             return f"{size_in_bytes / (1024 ** 3):.2f} GB"
+        
+
+
+def transactional(func):
+    async def wrapper(self, *args, **kwargs):
+        session = getattr(self, 'session', None)
+
+        if session is None:
+            raise ValueError("Session not provided")
+
+        if session.in_transaction():
+            return await func(self, *args, **kwargs)
+
+        async with session.begin():
+            try:
+                return await func(self, *args, **kwargs)
+            except Exception:
+                await session.rollback()
+                raise
+
+    return wrapper

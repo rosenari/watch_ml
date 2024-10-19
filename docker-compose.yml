@@ -52,13 +52,29 @@ services:
       - '6379:6379'
     networks:
       - monitoring_network
+  db:
+    image: postgres:14
+    environment:
+      POSTGRES_DB: 'watchml'
+      POSTGRES_USER: 'mluser'
+      POSTGRES_PASSWORD: 'devpassword'
+      POSTGRES_ROOT_PASSWORD: 'devpassword'
+      TZ: Asia/Seoul
+    volumes:
+      - ./backend/db/initdb.d:/docker-entrypoint-initdb.d
+      - ./backend/db/data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    networks:
+      - monitoring_network
+    restart: always
   triton:
     image: nvcr.io/nvidia/tritonserver:24.08-py3
     container_name: triton_server
     ports:
-      - '8000:8000' # HTTP 포트
-      - '8001:8001' # gRPC 포트
-      - '8002:8002' # Prometheus metrics 포트
+      - '8000:8000'
+      - '8001:8001'
+      - '8002:8002'
     volumes:
       - './backend/mlruns:/src/runs'
     environment:

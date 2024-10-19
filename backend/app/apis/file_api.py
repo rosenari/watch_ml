@@ -24,7 +24,7 @@ async def upload_file(file: UploadFile = Depends(validate_zip_file), file_servic
 @router.delete("/{file_name}", response_model=dict)
 async def delete_file(file_name: str, file_service: FileService = Depends(get_file_service)):
     try:
-        file_service.delete_file(file_name)
+        await file_service.delete_file(file_name)
         return {"file_name": file_name}
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="File not found")
@@ -36,7 +36,7 @@ async def delete_file(file_name: str, file_service: FileService = Depends(get_fi
 @router.get("/list", response_model=List[dict])
 async def get_file_list(file_service: FileService = Depends(get_file_service)):
     try:
-        return file_service.get_file_list()
+        return await file_service.get_file_list()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -58,5 +58,4 @@ async def get_valid_files(file_service: FileService = Depends(get_file_service))
     try:
         return await file_service.get_valid_file_list()
     except Exception as e:
-        print(e)
         raise HTTPException(status_code=500, detail=str(e))

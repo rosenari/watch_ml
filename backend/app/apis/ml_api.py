@@ -7,7 +7,7 @@ from app.tasks.main import create_model
 router = APIRouter()
 
 
-@router.post('', response_model=dict)
+@router.post('/create', response_model=dict)
 async def create_ml_model(request: ModelCreateRequest, ri = Depends(get_redis)):
     try:
         key = f"model:{request.name}"

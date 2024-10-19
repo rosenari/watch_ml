@@ -1,1 +1,1 @@
-curl -X GET "http://localhost:8000/files/list"
+curl -X GET "http://localhost:5000/files/list"

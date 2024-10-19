@@ -1,6 +1,7 @@
 import os
 import logging
 import traceback
+import shutil
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -9,10 +10,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 def create_yolo_model(model_name: str, output_dir: str, ml_runs_path: str, status_handler=lambda ri_key, status: None):
     logging.info("start create_yolo_model")
     # celery와 fastapi 의존성 분리로 인해 함수내에서 패키지 로딩
-    import mlflow
     from ultralytics import YOLO
 
-    epochs = 10
+    epochs = 1
     img_size = 640
 
     # data.yaml 파일 경로 설정
@@ -38,28 +38,37 @@ def create_yolo_model(model_name: str, output_dir: str, ml_runs_path: str, statu
             device='cuda:0',
         )
 
-        model.export(format="onnx", imgsz=img_size, dynamic=True, simplify=True)
+        export_path = model.export(format="onnx", imgsz=img_size, dynamic=True, simplify=True)
+        logging.info(f"onnx model export path: {export_path}")
 
-        artifact_path = model_name
-        #mlflow.log_artifact(onnx_model_path, artifact_path=artifact_path)
+        # onnx 모델을 레포로 복사
+        ML_REPO = 'model_repo'
+        dest_path = os.path.join(ml_runs_path, ML_REPO, model_name)
+        if not os.path.exists(dest_path):
+            os.makedirs(dest_path, exist_ok=True)
+        
+        shutil.copy(export_path, dest_path)
+        logging.info(f"YOLOv8 model has been successfully stored")
 
-        # 모델 레지스트리에 등록
-        """
-        mlflow.pyfunc.log_model(
-            artifact_path=artifact_path,
-            python_model=None,  
-            registered_model_name=model_name
-        )
-        """
-
-        # 학습 완료 상태를 Redis에 기록
-        status_handler(f"model:{model_name}", "complete")
-
-        logging.info(f"YOLOv8 model has been successfully registered in MLflow")
+        clear_directory_except(ml_runs_path ,[ML_REPO, 'triton_repo'])  # 찌꺼기 제거
         return True
-    
     except Exception as e:
-        status_handler(f"model:{model_name}", "failed")
         logging.error(f"An error occurred while creating and saving the model: {e}")
         logging.error(traceback.format_exc())
         return False
+    
+
+# 특정 디렉터리 내에서 제외할 디렉터리를 제외하고 모든 파일과 디렉터리를 삭제
+def clear_directory_except(target_dir: str, exclude_dirs: list):
+    for item in os.listdir(target_dir):
+        item_path = os.path.join(target_dir, item)
+
+        if item in exclude_dirs:
+            continue
+        
+        if os.path.isdir(item_path):
+            shutil.rmtree(item_path)
+            logging.info(f"Directory removed: {item_path}")
+        elif os.path.isfile(item_path):
+            os.remove(item_path)
+            logging.info(f"File removed: {item_path}")

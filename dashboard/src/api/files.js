@@ -2,7 +2,7 @@ export async function fileUpload(file) {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch('http://localhost:8000/files/upload', {
+    const response = await fetch('http://localhost:5000/files/upload', {
         method: 'POST',
         body: formData,
     });
@@ -16,7 +16,7 @@ export async function fileUpload(file) {
 }
 
 export async function getFileList() {
-    const response = await fetch('http://localhost:8000/files/list');
+    const response = await fetch('http://localhost:5000/files/list');
     
     if (response.ok) {
         const list = await response.json();
@@ -27,7 +27,7 @@ export async function getFileList() {
 }
 
 export async function deleteFile(fileName) {
-    const response = await fetch(`http://localhost:8000/files/${fileName}`, {
+    const response = await fetch(`http://localhost:5000/files/${fileName}`, {
         method: 'DELETE'
     });
 
@@ -40,7 +40,7 @@ export async function deleteFile(fileName) {
 
 export async function validFiles(fileNames) {
     const requests = fileNames.map(fileName => 
-        fetch(`http://localhost:8000/files/validation`, {
+        fetch(`http://localhost:5000/files/validation`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -69,7 +69,7 @@ export async function validFiles(fileNames) {
 }
 
 export async function getValidFiles() {
-    const response = await fetch(`http://localhost:8000/files/validation`);
+    const response = await fetch(`http://localhost:5000/files/validation`);
     if (response.ok) {
         const list = await response.json();
         return list;

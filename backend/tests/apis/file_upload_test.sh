@@ -13,7 +13,7 @@ echo "Temporary file content" > "$TEMP_DIR/temp.txt"
 zip -j "$TEMP_FILE" "$TEMP_DIR/temp.txt" > /dev/null
 
 # FastAPI 서버 URL
-UPLOAD_URL="http://localhost:8000/files/upload"
+UPLOAD_URL="http://localhost:5000/files/upload"
 
 # 현재 경로 출력 (확인용)
 echo "현재 경로: $(pwd)"

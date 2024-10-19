@@ -5,11 +5,18 @@ from app.tasks.train.merge_archive import merge_archive_files
 from app.tasks.train.create_ml_model import create_yolo_model
 import redis
 import os
+import shutil
 from datetime import datetime
 
 
 redis_url = CELERY_BROKER_URL
 app = Celery('tasks', broker=redis_url)
+
+
+def redis_status_handler(ri_key, status):
+    ri = redis.from_url(redis_url)
+    ri.set(ri_key, status)
+    ri.close()   
 
 
 @app.task
@@ -33,12 +40,6 @@ def valid_archive(file_name):
         ri.close()
 
 
-def redis_status_handler(ri_key, status):
-    ri = redis.from_url(redis_url)
-    ri.set(ri_key, status)
-    ri.close()
-
-
 @app.task
 def create_model(model_name: str, zip_files: list[str]):
     datetime_str = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -59,10 +60,11 @@ def create_model(model_name: str, zip_files: list[str]):
             ri.set(ri_key, "failed")
             return False
 
-        if not create_yolo_model(model_name, output_dir, ml_runs_path=CELERY_ML_RUNS_PATH, status_handler=redis_status_handler):  # AI 모델 생성
+        create_result = create_yolo_model(model_name, output_dir, ml_runs_path=CELERY_ML_RUNS_PATH, status_handler=redis_status_handler)
+        if not create_result:  # AI 모델 생성
             ri.set(ri_key, "failed")
             return False
-
+        
         ri.set(ri_key, "complete")
         return True
 

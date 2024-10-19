@@ -1,11 +1,11 @@
 services:
   backend:
+    container_name: backend
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
-    container_name: fastapi
     ports:
-      - '8000:8000'
+      - '5000:5000'
     volumes:
       - './backend/app:/src/app'
       - './backend/dataset_archive:/src/dataset_archive'
@@ -14,21 +14,11 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - PYTHONUNBUFFERED=1
       - FILE_DIRECTORY=/src/dataset_archive
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-    networks:
-      - monitoring_network
-  mlflow:
-    image: ghcr.io/mlflow/mlflow:v2.16.2
-    environment:
-      - MLFLOW_TRACKING_URI=http://0.0.0.0:5000
-    volumes:
-      - ./backend/mlruns:/mlflow/mlruns
-    ports:
-      - '5000:5000'
-    command: mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root /mlflow/mlruns --host 0.0.0.0
+    command: uvicorn main:app --host 0.0.0.0 --port 5000 --reload
     networks:
       - monitoring_network
   celery_worker:
+    container_name: worker
     build:
       context: ./backend
       dockerfile: Dockerfile.worker
@@ -57,8 +47,30 @@ services:
       - monitoring_network
   redis:
     image: redis:7.4
+    container_name: redis
     ports:
       - '6379:6379'
+    networks:
+      - monitoring_network
+  triton:
+    image: nvcr.io/nvidia/tritonserver:24.08-py3
+    container_name: triton_server
+    ports:
+      - '8000:8000' # HTTP 포트
+      - '8001:8001' # gRPC 포트
+      - '8002:8002' # Prometheus metrics 포트
+    volumes:
+      - './backend/mlruns:/src/runs'
+    environment:
+      - MODEL_REPOSITORY=/src/runs/triton_repo # 모델 저장소 경로 설정
+    runtime: nvidia # GPU 지원을 위해 nvidia runtime 사용
+    shm_size: '2g'
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu] # GPU 사용 설정
+    command: /bin/bash -c "mkdir -p /src/runs/triton_repo && tritonserver --model-repository=/src/runs/triton_repo"
     networks:
       - monitoring_network
 

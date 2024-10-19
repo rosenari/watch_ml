@@ -1,17 +1,31 @@
 from app.database import Base, async_engine
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float
 from sqlalchemy.sql import func
 
 
-class FileMeta(Base):
+class CommonFields:
+    id = Column(Integer, primary_key=True)
+    filepath = Column(String, nullable=False)  # 파일 경로
+    creation_time = Column(DateTime(timezone=True), default=func.now())
+    is_delete = Column(Boolean, default=False)
+
+
+class FileMeta(CommonFields, Base):
     __tablename__ = 'files'
     
-    id = Column(Integer, primary_key=True)
     filename = Column(String, unique=True, nullable=False)
-    filepath = Column(String, nullable=False)
     filesize = Column(Integer, nullable=False)
-    creation_time = Column(DateTime(timezone=True), default=func.now())  # 파일 생성 시간
-    is_delete = Column(Boolean, default=False)  # 논리적 삭제 여부
+
+
+class AiModel(CommonFields, Base):
+    __tablename__ = 'ai'
+
+    modelname = Column(String, unique=True, nullable=False)
+    map50 = Column(Float, nullable=True)        
+    map50_95 = Column(Float, nullable=True)     
+    precision = Column(Float, nullable=True)   
+    recall = Column(Float, nullable=True)       
+    is_deploy = Column(Boolean, default=False)
 
 
 async def create_tables():

@@ -44,7 +44,7 @@ def valid_archive(file_name):
 def create_model(model_name: str, zip_files: list[str]):
     datetime_str = datetime.now().strftime("%Y%m%d%H%M%S")
     output_dir = os.path.join(CELERY_ML_RUNS_PATH, f"{model_name}_{datetime_str}")
-    ri_key = f"model:{model_name}"
+    ri_key = f"train:{model_name}"
     zip_files = [os.path.join(CELERY_ARCHIVE_PATH, zip_file) for zip_file in zip_files]
 
     ri = redis.from_url(redis_url)

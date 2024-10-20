@@ -25,7 +25,7 @@ def create_yolo_model(model_name: str, output_dir: str, ml_runs_path: str, statu
         epoch = trainer.epoch
         total_epochs = trainer.epochs
         logging.info(f"Epoch {epoch + 1}/{total_epochs} completed")
-        status_handler(f"model:{model_name}", f"Epoch {epoch + 1} completed")
+        status_handler(f"train:{model_name}", f"Epoch {epoch + 1} completed")
 
 
     try:

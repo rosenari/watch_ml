@@ -21,6 +21,11 @@ services:
     command: uvicorn main:app --host 0.0.0.0 --port 5000 --reload
     networks:
       - monitoring_network
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
   celery_worker:
     container_name: worker
     build:
@@ -32,7 +37,8 @@ services:
           devices:
             - capabilities: [gpu]
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     volumes:
       - './backend/app:/src/app'
       - './backend/dataset_archive:/src/dataset_archive'
@@ -54,6 +60,12 @@ services:
     container_name: redis
     ports:
       - '6379:6379'
+    restart: always
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - monitoring_network
   db:
@@ -72,6 +84,11 @@ services:
     networks:
       - monitoring_network
     restart: always
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
   triton:
     image: nvcr.io/nvidia/tritonserver:24.08-py3
     container_name: triton_server

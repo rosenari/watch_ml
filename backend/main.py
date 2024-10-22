@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.apis import file_api, ml_api
+from app.apis import dataset_api, ml_api
 from app.entity import create_tables
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -32,5 +32,5 @@ async def global_exception_handler(request, exc: Exception):
 
 
 # 파일 관련 API 라우터 등록
-app.include_router(file_api.router, prefix="/files")
+app.include_router(dataset_api.router, prefix="/dataset")
 app.include_router(ml_api.router, prefix="/ml")

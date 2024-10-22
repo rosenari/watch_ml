@@ -2,9 +2,8 @@ from fastapi import APIRouter, UploadFile, HTTPException, Depends
 from typing import List
 from app.apis.models import FileValidationRequest
 from app.validation import validate_zip_file
-from app.database import get_redis
-from app.tasks.main import valid_archive
-from app.services.file_service import get_file_service, FileService
+from app.tasks.main import valid_archive_task
+from app.services.dataset_service import get_dataset_service, DataSetService
 
 
 router = APIRouter()
@@ -12,9 +11,9 @@ router = APIRouter()
 
 # 파일 업로드
 @router.post("/upload", response_model=dict)
-async def upload_file(file: UploadFile = Depends(validate_zip_file), file_service: FileService = Depends(get_file_service)):
+async def upload_file(file: UploadFile = Depends(validate_zip_file), dataset_service: DataSetService = Depends(get_dataset_service)):
     try:
-        file_name = await file_service.upload_file(file)
+        file_name = await dataset_service.upload_file(file)
         return {"file_name": file_name}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -22,9 +21,9 @@ async def upload_file(file: UploadFile = Depends(validate_zip_file), file_servic
 
 # 파일 삭제
 @router.delete("/{file_name}", response_model=dict)
-async def delete_file(file_name: str, file_service: FileService = Depends(get_file_service)):
+async def delete_file(file_name: str, dataset_service: DataSetService = Depends(get_dataset_service)):
     try:
-        await file_service.delete_file(file_name)
+        await dataset_service.delete_file(file_name)
         return {"file_name": file_name}
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="File not found")
@@ -34,19 +33,18 @@ async def delete_file(file_name: str, file_service: FileService = Depends(get_fi
 
 # 파일 목록
 @router.get("/list", response_model=List[dict])
-async def get_file_list(file_service: FileService = Depends(get_file_service)):
+async def get_file_list(dataset_service: DataSetService = Depends(get_dataset_service)):
     try:
-        return await file_service.get_file_list()
+        return await dataset_service.get_file_list()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post('/validation', response_model=dict)
-async def valid_file(request: FileValidationRequest, ri = Depends(get_redis)):
+async def valid_file(request: FileValidationRequest, dataset_service: DataSetService = Depends(get_dataset_service)):
     try:
-        key = f"valid:{request.file_name}"
-        await ri.set(key, "pending")
-        valid_archive.delay(request.file_name)
+        await dataset_service.update_status(request.file_name, 'pending')
+        valid_archive_task.delay(request.file_name)
 
         return { 'result': True }
     except Exception as e:
@@ -54,8 +52,8 @@ async def valid_file(request: FileValidationRequest, ri = Depends(get_redis)):
     
 
 @router.get('/validation', response_model=List[dict])
-async def get_valid_files(file_service: FileService = Depends(get_file_service)):
+async def get_valid_files(dataset_service: DataSetService = Depends(get_dataset_service)):
     try:
-        return await file_service.get_valid_file_list()
+        return await dataset_service.get_file_status()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

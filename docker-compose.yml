@@ -13,7 +13,7 @@ services:
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - PYTHONUNBUFFERED=1
-      - FILE_DIRECTORY=/src/dataset_archive
+      - DATASET_DIRECTORY=/src/dataset_archive
       - DATABASE_USER=mluser
       - DATABASE_PASSWORD=devpassword
       - DATABASE_HOST=db

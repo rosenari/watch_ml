@@ -1,11 +1,14 @@
 from celery import Celery
-from app.config import CELERY_BROKER_URL, CELERY_ARCHIVE_PATH, CELERY_ML_RUNS_PATH
+from app.config import CELERY_BROKER_URL, CELERY_ARCHIVE_PATH, CELERY_ML_RUNS_PATH, DATASET_DIRECTORY
 from app.tasks.valid.valid_archive import parse_and_verify_zip
 from app.tasks.train.merge_archive import merge_archive_files
 from app.tasks.train.create_ml_model import create_yolo_model
-import redis
+from app.services.dataset_service import DataSetService
+from app.services.ml_service import MlService
+from app.database import get_redis, get_session
 import os
-import shutil
+import asyncio
+import redis
 from datetime import datetime
 
 
@@ -17,56 +20,76 @@ def redis_status_handler(ri_key, status):
     ri = redis.from_url(redis_url)
     ri.set(ri_key, status)
     ri.close()   
+    
+
+async def dataset_status_handler(file_name: str, status: str):
+    async with get_redis() as ri, get_session() as session:
+        dataset_service = DataSetService(redis=ri, session=session, file_directory=DATASET_DIRECTORY)
+        await dataset_service.update_status(file_name, status)
 
 
-@app.task
-def valid_archive(file_name):
-    zip_path = f"{CELERY_ARCHIVE_PATH}/{file_name}"
-    ri_key = f"valid:{file_name}"
+async def ml_status_handler(model_name: str, status: str):
+    file_name = f"{model_name}.onnx"
+    async with get_redis() as redis_instance, get_session() as session_instance:
+        file_service = MlService(redis=redis_instance, session=session_instance)
+        await file_service.update_status(file_name, status)
 
+
+def clear_redis_keys_sync(key_pattern: str):
     ri = redis.from_url(redis_url)
     
-    try:
-        ri.set(ri_key, "running")
+    cursor = "0"
+    while cursor != 0:
+        cursor, keys = ri.scan(cursor=cursor, match=key_pattern, count=100)
+        if keys:
+            ri.delete(*keys)
 
-        result = parse_and_verify_zip(zip_path)
-        status = "complete" if result else "failed"
-
-        ri.set(ri_key, status)
-
-        return result
-
-    finally:
-        ri.close()
+    ri.close()
 
 
 @app.task
-def create_model(model_name: str, zip_files: list[str]):
+def valid_archive_task(file_name):
+    return asyncio.run(valid_archive_task(file_name))
+
+
+async def valid_archive(file_name):
+    zip_path = f"{CELERY_ARCHIVE_PATH}/{file_name}"    
+    await dataset_status_handler(file_name, 'running')
+
+    result = parse_and_verify_zip(zip_path)
+    status = "complete" if result else "failed"
+
+    await dataset_status_handler(file_name, status)
+
+    return result
+
+
+@app.task
+def create_model_task(model_name: str, zip_files: list[str]):
+    return asyncio.run(create_model(model_name, zip_files))
+
+
+async def create_model(model_name: str, zip_files: list[str]):
     datetime_str = datetime.now().strftime("%Y%m%d%H%M%S")
     output_dir = os.path.join(CELERY_ML_RUNS_PATH, f"{model_name}_{datetime_str}")
-    ri_key = f"train:{model_name}"
     zip_files = [os.path.join(CELERY_ARCHIVE_PATH, zip_file) for zip_file in zip_files]
 
-    ri = redis.from_url(redis_url)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir, exist_ok=True)
+    else:
+        await ml_status_handler(model_name, 'failed')
+        return False
 
-    try:
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir, exist_ok=True)
-        else:
-            ri.set(ri_key, "failed")
-            return False
+    if not merge_archive_files(zip_files, output_dir):  # 아카이브 병합
+        await ml_status_handler(model_name, 'failed')
+        return False
+
+    create_result = create_yolo_model(model_name, output_dir, ml_runs_path=CELERY_ML_RUNS_PATH, status_handler=redis_status_handler)
+    if not create_result:  # AI 모델 생성
+        await ml_status_handler(model_name, 'failed')
+        return False
     
-        if not merge_archive_files(zip_files, output_dir):  # 아카이브 병합
-            ri.set(ri_key, "failed")
-            return False
-
-        create_result = create_yolo_model(model_name, output_dir, ml_runs_path=CELERY_ML_RUNS_PATH, status_handler=redis_status_handler)
-        if not create_result:  # AI 모델 생성
-            ri.set(ri_key, "failed")
-            return False
-        
-        ri.set(ri_key, "complete")
-        return True
-
-    finally:
-        ri.close()
+    await ml_status_handler(model_name, 'complete')
+    file_name = f"{model_name}.onnx"
+    clear_redis_keys_sync(f"train:{file_name}")
+    return True

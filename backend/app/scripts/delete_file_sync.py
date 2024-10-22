@@ -24,7 +24,7 @@ async def delete_file_records_and_files(db: AsyncSession):
     result = await db.execute(
         select(DataSet)
         .filter(DataSet.is_delete == True)
-        .options(joinedload(DataSet.file_meta))
+        .options(joinedload(DataSet.file_meta))  # 비동기 세션에서는 lazy loading을 지원하지 않아, 한번에 가져와야한다. ㅠ
     )
     datasets_to_delete = result.scalars().all()
 

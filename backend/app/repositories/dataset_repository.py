@@ -17,12 +17,19 @@ class DatasetRepository:
 
     async def save_file(self, file_name: str, content: bytes) -> DataSet:
         file_meta = await self.file_repository.save_file(file_name, content)
-        
-        dataset = DataSet(
-            filename=file_name,
-            file_meta=file_meta
-        )
-        self.db.add(dataset)
+        result = await self.db.execute(select(DataSet).filter(DataSet.filename == file_name))
+        dataset = result.scalars().first()
+
+        if dataset:
+            dataset.is_delete = False
+            dataset.file_meta = file_meta
+        else:
+            dataset = DataSet(
+                filename=file_name,
+                file_meta=file_meta
+            )
+            self.db.add(dataset)
+
         await self.db.flush()
         return dataset
 

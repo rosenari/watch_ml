@@ -1,17 +1,15 @@
 import os
 import aiofiles
-from typing import List
 
-from sqlalchemy import desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from app.config import FILE_DIRECTORY
-from app.entity import FileMeta, Status
+from app.config import DATASET_DIRECTORY
+from app.entity import FileMeta
 
 
 
 class FileRepository:
-    def __init__(self, file_directory: str = FILE_DIRECTORY, db: AsyncSession = None):
+    def __init__(self, file_directory: str = DATASET_DIRECTORY, db: AsyncSession = None):
         self.file_directory = file_directory
         self.db = db
 
@@ -23,36 +21,34 @@ class FileRepository:
         
         file_size = os.path.getsize(file_path)
         
-        file_record = FileMeta(
-            filename=file_name,
+        file_meta = FileMeta(
             filepath=file_path,
             filesize=file_size
         )
-        self.db.add(file_record)
-        return file_record
 
-    async def delete_file(self, file_name: str) -> None:
-        result = await self.db.execute(select(FileMeta).filter(FileMeta.filename == file_name))
-        file_record = result.scalars().first()
-        
-        if not file_record:
+        self.db.add(file_meta)
+        await self.db.flush()
+        return file_meta
+    
+    async def register_file(self, file_name: str) -> FileMeta:
+        file_path = os.path.join(self.file_directory, file_name)
+        file_size = os.path.getsize(file_path)
+
+        file_meta = FileMeta(
+            filepath=file_path,
+            filesize=file_size
+        )
+
+        self.db.add(file_meta)
+        await self.db.flush()
+        return file_meta
+
+    async def get_file(self, file_name: str) -> FileMeta:
+        file_path = os.path.join(self.file_directory, file_name)
+        result = await self.db.execute(select(FileMeta).filter(FileMeta.filepath == file_path))
+        file_meta = result.scalars().first()
+
+        if not file_meta:
             raise FileNotFoundError(f"File {file_name} not found in database.")
-        
-        file_record.is_delete = True
 
-    async def list_files(self) -> List[FileMeta]:
-        result = await self.db.execute(select(FileMeta).filter(FileMeta.is_delete == False).order_by(desc(FileMeta.creation_time)).limit(100))  # 100개 제한
-        files = result.scalars().all()
-
-        return files
-
-    # 상태 업데이트
-    async def update_status(self, file_name: str, new_status: Status) -> None:
-        result = await self.db.execute(select(FileMeta).filter(FileMeta.filename == file_name))
-        file_record = result.scalars().first()
-
-        if not file_record:
-            raise FileNotFoundError(f"File {file_name} not found in database.")
-        
-        file_record.status = new_status
-        self.db.add(file_record)
+        return file_meta

@@ -39,7 +39,7 @@ class MlService:
     async def get_model_list(self) -> List[dict]:
         models = await self.repository.get_all_models_with_filemeta()
         return [{
-            "file_name": model.modelname,
+            "file_name": model.filename,
             "file_path": model.file_meta.filepath,
             "file_size": model.file_meta.filesize,
             "map50": model.map50, 

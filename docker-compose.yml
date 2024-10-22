@@ -14,6 +14,7 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - PYTHONUNBUFFERED=1
       - DATASET_DIRECTORY=/src/dataset_archive
+      - MODEL_DIRECTORY=/src/runs/model_repo
       - DATABASE_USER=mluser
       - DATABASE_PASSWORD=devpassword
       - DATABASE_HOST=db
@@ -50,6 +51,12 @@ services:
       - CELERY_ARCHIVE_PATH=/src/dataset_archive
       - VALID_ARCHIVE_MODULE_PATH=valid_archive
       - CELERY_ML_RUNS_PATH=/src/runs
+      - DATASET_DIRECTORY=/src/dataset_archive
+      - MODEL_DIRECTORY=/src/runs/model_repo
+      - DATABASE_USER=mluser
+      - DATABASE_PASSWORD=devpassword
+      - DATABASE_HOST=db
+      - DATABASE=watchml
     runtime: nvidia
     shm_size: '1g'
     command: celery -A app.tasks.main worker --loglevel=info --concurrency=1 --pool=threads

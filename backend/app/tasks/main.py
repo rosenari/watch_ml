@@ -20,19 +20,21 @@ def redis_status_handler(ri_key, status):
     ri = redis.from_url(redis_url)
     ri.set(ri_key, status)
     ri.close()   
-    
+
 
 async def dataset_status_handler(file_name: str, status: str):
-    async with get_redis() as ri, get_session() as session:
-        dataset_service = DataSetService(redis=ri, session=session, file_directory=DATASET_DIRECTORY)
-        await dataset_service.update_status(file_name, status)
+    async for redis_instance in get_redis():
+        async for session_instance in get_session():
+            dataset_service = DataSetService(redis=redis_instance, session=session_instance, file_directory=DATASET_DIRECTORY)
+            await dataset_service.update_status(file_name, status)
 
 
 async def ml_status_handler(model_name: str, status: str):
     file_name = f"{model_name}.onnx"
-    async with get_redis() as redis_instance, get_session() as session_instance:
-        file_service = MlService(redis=redis_instance, session=session_instance)
-        await file_service.update_status(file_name, status)
+    async for redis_instance in get_redis():
+        async for session_instance in get_session():
+            ml_serivce = MlService(redis=redis_instance, session=session_instance)
+            await ml_serivce.update_status(file_name, status)
 
 
 def clear_redis_keys_sync(key_pattern: str):
@@ -49,7 +51,7 @@ def clear_redis_keys_sync(key_pattern: str):
 
 @app.task
 def valid_archive_task(file_name):
-    return asyncio.run(valid_archive_task(file_name))
+    return asyncio.run(valid_archive(file_name))
 
 
 async def valid_archive(file_name):

@@ -75,7 +75,6 @@ def test_merge_classes_per_split(sample_zip_file):
     merged_classes = set()
     label_dir = os.path.join(temp_dir.name, data['train'].replace('images', 'labels'))
     
-    print(os.path.exists(label_dir))
     merged_classes = merge_classes_per_split(os.path.join(label_dir, 'classes.txt'), merged_classes)
     
     assert 'class1' in merged_classes

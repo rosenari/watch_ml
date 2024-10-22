@@ -14,22 +14,23 @@ class MlRepository:
         self.file_repository = FileRepository(file_directory, db)
 
     # AI 모델 등록
-    async def register_model(self, file_name: str, version: int, file_path: str, map50: float = None, map50_95: float = None, precision: float = None, recall: float = None) -> AiModel:
-        result = await self.db.execute(select(AiModel).filter(AiModel.filename == file_name, AiModel.version == version))
-        existing_model = result.scalars().first()
-        file_meta = await self.file_repository.register_file(file_path)
+    async def register_model(self, file_name: str, version: int = 1, file_path: str = None, map50: float = None, map50_95: float = None, precision: float = None, recall: float = None) -> AiModel:
+        result = await self.db.execute(select(AiModel).filter(AiModel.filename == file_name))
+        model = result.scalars().first()
+        file_meta = None
 
-        if existing_model:
-            existing_model.map50 = map50
-            existing_model.map50_95 = map50_95
-            existing_model.precision = precision
-            existing_model.recall = recall
-            existing_model.is_delete = False
-            existing_model.file_meta = file_meta
-            await self.db.flush()
-            return existing_model
+        if file_path is not None:
+            file_meta = await self.file_repository.register_file(file_path)
+
+        if model is not None:
+            model.version = version
+            model.map50 = map50
+            model.map50_95 =  map50_95
+            model.precision = precision
+            model.recall = recall
+            model.file_meta = file_meta
         else:
-            new_model = AiModel(
+            model = AiModel(
                 filename=file_name,
                 version=version,
                 map50=map50,
@@ -38,10 +39,40 @@ class MlRepository:
                 recall=recall,
                 file_meta=file_meta
             )
+            self.db.add(model)
+        await self.db.flush()
+        return model
+    
+    async def update_model(self, file_name: str, version: int = None, file_path: str = None, map50: float = None, map50_95: float = None, precision: float = None, recall: float = None) -> AiModel:
+        result = await self.db.execute(select(AiModel).filter(AiModel.filename == file_name))
+        model = result.scalars().first()
 
-            self.db.add(new_model)
-            await self.db.flush()
-            return new_model
+        if not model:
+            raise FileNotFoundError(f"Model {file_name} not found in database.")
+        
+        model.is_delete = False
+        
+        if version is not None:
+            model.version = version
+        
+        if file_path is not None:
+            file_meta = await self.file_repository.register_file(file_path)
+            model.file_meta = file_meta
+        
+        if map50 is not None:
+            model.map50 = map50
+        
+        if map50_95 is not None:
+            model.map50_95 = map50_95
+        
+        if precision is not None:
+            model.precision = precision
+        
+        if recall is not None:
+            model.recall = recall
+
+        await self.db.flush()  # 데이터베이스에 변경 사항을 반영
+        return model
 
     async def get_model_by_name(self, file_name: str) -> AiModel:
         try:

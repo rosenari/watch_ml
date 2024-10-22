@@ -18,7 +18,7 @@ async def get_redis(url=None):
         await redis.aclose()
 
 
-async_engine = create_async_engine(SQLALCHEMY_DATABASE_URL, echo=True)
+async_engine = create_async_engine(SQLALCHEMY_DATABASE_URL, echo=False)
 session_factory = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
 
 Base = declarative_base()

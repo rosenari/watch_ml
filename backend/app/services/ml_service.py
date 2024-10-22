@@ -14,9 +14,11 @@ class MlService:
         self.repository = MlRepository(file_directory=file_directory, db=session)
 
     @transactional
-    async def register_model(self, file_name: str, map50: float = None, map50_95: float = None, precision: float = None, recall: float = None) -> str:
+    async def register_model(self, file_name: str, version: int, file_path: str, map50: float = None, map50_95: float = None, precision: float = None, recall: float = None) -> str:
         new_model = await self.repository.register_model(
             file_name=file_name,
+            version=version,
+            file_path=file_path,
             map50=map50,
             map50_95=map50_95,
             precision=precision,
@@ -28,6 +30,7 @@ class MlService:
         model = await self.repository.get_model_by_name_with_filemeta(file_name)
         return {
             "file_name": model.filename, 
+            "version": model.version,
             "file_path": model.file_meta.filepath,
             "map50": model.map50, 
             "map50_95": model.map50_95, 
@@ -40,6 +43,7 @@ class MlService:
         models = await self.repository.get_all_models_with_filemeta()
         return [{
             "file_name": model.filename,
+            "version": model.version,
             "file_path": model.file_meta.filepath,
             "file_size": model.file_meta.filesize,
             "map50": model.map50, 

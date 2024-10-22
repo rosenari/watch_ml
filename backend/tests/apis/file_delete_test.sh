@@ -1,1 +1,0 @@
-curl -X DELETE "http://localhost:5000/files/tempfileXXXXXX.zip"

@@ -34,8 +34,7 @@ class FileRepository:
         await self.db.flush()
         return file_meta
 
-    async def register_file(self, file_name: str) -> FileMeta:
-        file_path = os.path.join(self.file_directory, file_name)
+    async def register_file(self, file_path: str) -> FileMeta:
         file_size = os.path.getsize(file_path)
         file_meta = await self._get_existing_file_meta(file_path)
 

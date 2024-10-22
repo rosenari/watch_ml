@@ -7,11 +7,12 @@ import shutil
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-def create_yolo_model(model_name: str, output_dir: str, ml_runs_path: str, status_handler=lambda ri_key, status: None):
+def create_yolo_model(model_name: str, version: int, output_dir: str, ml_runs_path: str, status_handler=lambda ri_key, status: None):
     logging.info("start create_yolo_model")
-    # celery와 fastapi 의존성 분리로 인해 함수내에서 패키지 로딩
+    # celery와 fastapi 의존성 분리로 인해 함수내에서 패키지 로딩 (yolo 패키지는 celery에만 존재)
     from ultralytics import YOLO
 
+    file_name = f"{model_name}.onnx"
     epochs = 1
     img_size = 640
 
@@ -25,38 +26,53 @@ def create_yolo_model(model_name: str, output_dir: str, ml_runs_path: str, statu
         epoch = trainer.epoch
         total_epochs = trainer.epochs
         logging.info(f"Epoch {epoch + 1}/{total_epochs} completed")
-        file_name = f"{model_name}.onnx"
         status_handler(f"train:{file_name}", f"Epoch {epoch + 1} completed")
 
 
     try:
         model.add_callback("on_train_epoch_end", on_train_epoch_end)
 
-        model.train(
+        results = model.train(
             data=data_yaml, 
             epochs=epochs,  
             imgsz=img_size,
             device='cuda:0',
         )
 
+        metrics = results.metrics 
+        map50 = metrics['map50']
+        map50_95 = metrics['map50_95']
+        precision = metrics['precision']
+        recall = metrics['recall']
+
         export_path = model.export(format="onnx", imgsz=img_size, dynamic=True, simplify=True)
         logging.info(f"onnx model export path: {export_path}")
 
         # onnx 모델을 레포로 복사
         ML_REPO = 'model_repo'
-        dest_path = os.path.join(ml_runs_path, ML_REPO, model_name)
+        TRITON_REPO = 'triton_repo'
+        dest_path = os.path.join(ml_runs_path, ML_REPO, model_name, version)
         if not os.path.exists(dest_path):
             os.makedirs(dest_path, exist_ok=True)
         
         shutil.copy(export_path, dest_path)
         logging.info(f"YOLOv8 model has been successfully stored")
 
-        clear_directory_except(ml_runs_path ,[ML_REPO, 'triton_repo'])  # 찌꺼기 제거
-        return True
+        clear_directory_except(ml_runs_path ,[ML_REPO, TRITON_REPO])  # 찌꺼기 제거
+        
+        return True, {
+            "file_name": file_name,
+            "version": version,
+            "file_path": os.path.join(dest_path, file_name),
+            "map50": map50,
+            "map50_95": map50_95,
+            "precision": precision,
+            "recall": recall
+        }
     except Exception as e:
         logging.error(f"An error occurred while creating and saving the model: {e}")
         logging.error(traceback.format_exc())
-        return False
+        return False, None
     
 
 # 특정 디렉터리 내에서 제외할 디렉터리를 제외하고 모든 파일과 디렉터리를 삭제

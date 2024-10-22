@@ -51,12 +51,13 @@ def ml_service(redis, session, temp_directory) -> MlService:
 @pytest.mark.asyncio
 async def test_register_model(ml_service: MlService, temp_file: str):
     file_name = os.path.basename(temp_file)
+    version = 1
     map50 = 0.75
     map50_95 = 0.65
     precision = 0.8
     recall = 0.9
 
-    await ml_service.register_model(file_name, map50, map50_95, precision, recall)
+    await ml_service.register_model(file_name, version, temp_file, map50, map50_95, precision, recall)
 
     model_list = await ml_service.get_model_list()
     model_names = [model['file_name'] for model in model_list]
@@ -67,17 +68,20 @@ async def test_register_model(ml_service: MlService, temp_file: str):
 @pytest.mark.asyncio
 async def test_get_model_by_name(ml_service: MlService, temp_file: str):
     file_name = os.path.basename(temp_file)
+    version = 1
     map50 = 0.75
     map50_95 = 0.65
     precision = 0.8
     recall = 0.9
 
-    await ml_service.register_model(file_name, map50, map50_95, precision, recall)
+    await ml_service.register_model(file_name, version, temp_file, map50, map50_95, precision, recall)
 
     model = await ml_service.get_model_by_name(file_name)
 
     assert model is not None, f"Model {file_name} was not found."
     assert model["file_name"] == file_name, f"Expected {file_name}, got {model['file_name']}."
+    assert model["version"] == version, f"Expected {version}, got {model['version']}."
+    assert model["file_path"] == temp_file, f"Expected {temp_file}, got {model['file_path']}."
     assert model["map50"] == map50, f"Expected {map50}, got {model['map50']}."
     assert model["map50_95"] == map50_95, f"Expected {map50_95}, got {model['map50_95']}."
     assert model["precision"] == precision, f"Expected {precision}, got {model['precision']}."
@@ -88,8 +92,13 @@ async def test_get_model_by_name(ml_service: MlService, temp_file: str):
 @pytest.mark.asyncio
 async def test_delete_model(ml_service: MlService, temp_file: str):
     file_name = os.path.basename(temp_file)
-    await ml_service.register_model(file_name)
+    version = 1
+    map50 = 0.75
+    map50_95 = 0.65
+    precision = 0.8
+    recall = 0.9
 
+    await ml_service.register_model(file_name, version, temp_file, map50, map50_95, precision, recall)
     await ml_service.delete_model(file_name)
 
     model_list = await ml_service.get_model_list()
@@ -111,7 +120,7 @@ async def test_get_model_list(ml_service: MlService, temp_directory):
         with open(temp_file_path, "wb") as f:
             f.write(b"dummy model content")
         
-        await ml_service.register_model(file_name, map50, map50_95, precision, recall)
+        await ml_service.register_model(file_name, 1, temp_file_path, map50, map50_95, precision, recall)
 
     model_list = await ml_service.get_model_list()
     model_names = [model['file_name'] for model in model_list]
@@ -123,8 +132,13 @@ async def test_get_model_list(ml_service: MlService, temp_directory):
 @pytest.mark.asyncio
 async def test_update_model_status(ml_service: MlService, temp_file: str):
     file_name = os.path.basename(temp_file)
-    await ml_service.register_model(file_name)
+    version = 1
+    map50 = 0.75
+    map50_95 = 0.65
+    precision = 0.8
+    recall = 0.9
 
+    await ml_service.register_model(file_name, version, temp_file, map50, map50_95, precision, recall)
     await ml_service.update_status(file_name, "running")
 
     model_list = await ml_service.get_model_status()

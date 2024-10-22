@@ -14,28 +14,34 @@ class MlRepository:
         self.file_repository = FileRepository(file_directory, db)
 
     # AI 모델 등록
-    async def register_model(self, file_name: str, map50: float = None, map50_95: float = None, precision: float = None, recall: float = None) -> AiModel:
-        file_meta = await self.file_repository.register_file(file_name)
-        
-        stmt = select(AiModel).where(AiModel.filename == file_name)
-        existing_model = await self.db.execute(stmt)
-        latest_model = existing_model.scalars().first()
+    async def register_model(self, file_name: str, version: int, file_path: str, map50: float = None, map50_95: float = None, precision: float = None, recall: float = None) -> AiModel:
+        result = await self.db.execute(select(AiModel).filter(AiModel.filename == file_name, AiModel.version == version))
+        existing_model = result.scalars().first()
+        file_meta = await self.file_repository.register_file(file_path)
 
-        new_version = latest_model.version + 1 if latest_model else 1
+        if existing_model:
+            existing_model.map50 = map50
+            existing_model.map50_95 = map50_95
+            existing_model.precision = precision
+            existing_model.recall = recall
+            existing_model.is_delete = False
+            existing_model.file_meta = file_meta
+            await self.db.flush()
+            return existing_model
+        else:
+            new_model = AiModel(
+                filename=file_name,
+                version=version,
+                map50=map50,
+                map50_95=map50_95,
+                precision=precision,
+                recall=recall,
+                file_meta=file_meta
+            )
 
-        new_model = AiModel(
-            filename=file_name,
-            version=new_version,
-            map50=map50,
-            map50_95=map50_95,
-            precision=precision,
-            recall=recall,
-            file_meta=file_meta
-        )
-
-        self.db.add(new_model)
-        await self.db.flush()
-        return new_model
+            self.db.add(new_model)
+            await self.db.flush()
+            return new_model
 
     async def get_model_by_name(self, file_name: str) -> AiModel:
         try:

@@ -11,7 +11,10 @@ def create_yolo_model(model_name: str, version: int, output_dir: str, ml_runs_pa
     logging.info("start create_yolo_model")
     # celery와 fastapi 의존성 분리로 인해 함수내에서 패키지 로딩 (yolo 패키지는 celery에만 존재)
     from ultralytics import YOLO
+    import torch
 
+    ML_REPO = 'model_repo'
+    TRITON_REPO = 'triton_repo'
     file_name = f"{model_name}.onnx"
     epochs = 1
     img_size = 640
@@ -32,33 +35,31 @@ def create_yolo_model(model_name: str, version: int, output_dir: str, ml_runs_pa
     try:
         model.add_callback("on_train_epoch_end", on_train_epoch_end)
 
-        results = model.train(
+        model.train(
             data=data_yaml, 
             epochs=epochs,  
             imgsz=img_size,
+            batch=2,
             device='cuda:0',
         )
 
-        metrics = results.metrics 
-        map50 = metrics['map50']
-        map50_95 = metrics['map50_95']
-        precision = metrics['precision']
-        recall = metrics['recall']
+        metrics = model.val()
+        map50 = metrics.box.map50
+        map50_95 = metrics.box.map
+        precision = metrics.box.mp
+        recall = metrics.box.mr
 
         export_path = model.export(format="onnx", imgsz=img_size, dynamic=True, simplify=True)
         logging.info(f"onnx model export path: {export_path}")
 
         # onnx 모델을 레포로 복사
-        ML_REPO = 'model_repo'
-        TRITON_REPO = 'triton_repo'
-        dest_path = os.path.join(ml_runs_path, ML_REPO, model_name, version)
+        dest_path = os.path.join(ml_runs_path, ML_REPO, model_name, str(version))
         if not os.path.exists(dest_path):
             os.makedirs(dest_path, exist_ok=True)
         
-        shutil.copy(export_path, dest_path)
+        new_dest_path = os.path.join(dest_path, file_name)
+        shutil.copy(export_path, new_dest_path)
         logging.info(f"YOLOv8 model has been successfully stored")
-
-        clear_directory_except(ml_runs_path ,[ML_REPO, TRITON_REPO])  # 찌꺼기 제거
         
         return True, {
             "file_name": file_name,
@@ -73,6 +74,16 @@ def create_yolo_model(model_name: str, version: int, output_dir: str, ml_runs_pa
         logging.error(f"An error occurred while creating and saving the model: {e}")
         logging.error(traceback.format_exc())
         return False, None
+    finally:
+        # 명시적으로 자원을 전부 해제한다.
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+        del model 
+        logging.info("Deleted YOLO model object to release memory.")
+        
+        clear_directory_except(ml_runs_path ,[ML_REPO, TRITON_REPO])  # 찌꺼기 제거
+        logging.info("Temporary directories cleaned up.")
     
 
 # 특정 디렉터리 내에서 제외할 디렉터리를 제외하고 모든 파일과 디렉터리를 삭제

@@ -24,7 +24,7 @@ def transactional(func):
         async with session.begin():
             try:
                 return await func(self, *args, **kwargs)
-            except Exception:
+            except Exception as e:
                 await session.rollback()
                 raise
 

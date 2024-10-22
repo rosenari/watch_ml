@@ -59,7 +59,7 @@ class AiModel(Base):
     status = Column(Enum(Status), nullable=False, default=Status.READY)
     is_delete = Column(Boolean, default=False)
 
-    file_meta_id = Column(Integer, ForeignKey('file_meta.id'), nullable=False)
+    file_meta_id = Column(Integer, ForeignKey('file_meta.id'), nullable=True)
     file_meta = relationship("FileMeta", back_populates="ai_model", cascade="all, delete")
 
 
@@ -68,10 +68,10 @@ class InferenceFile(Base):
 
     id = Column(Integer, primary_key=True)
 
-    original_file_name = Column(String, nullable=False)
-    generated_file_name = Column(String, nullable=False)
-    original_file_id = Column(Integer, ForeignKey('file_meta.id'), nullable=False)
-    generated_file_id = Column(Integer, ForeignKey('file_meta.id'), nullable=False)
+    original_file_name = Column(String, nullable=True)
+    generated_file_name = Column(String, nullable=True)
+    original_file_id = Column(Integer, ForeignKey('file_meta.id'), nullable=True)
+    generated_file_id = Column(Integer, ForeignKey('file_meta.id'), nullable=True)
     file_type = Column(Enum(FileType), nullable=False, default=FileType.PHOTO)
     is_delete = Column(Boolean, default=False)
 

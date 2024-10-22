@@ -13,8 +13,19 @@ class MlService:
         self.session = session
         self.repository = MlRepository(file_directory=file_directory, db=session)
 
+
     @transactional
-    async def register_model(self, file_name: str, version: int, file_path: str, map50: float = None, map50_95: float = None, precision: float = None, recall: float = None) -> str:
+    async def init_model(self, model_name: str) -> int:
+        file_name = f"{model_name}.onnx"
+        model = await self.get_model_by_name(file_name)
+        version = 1 if model is None else model['version'] + 1
+        await self.register_model(file_name, version)
+
+        return version
+
+
+    @transactional
+    async def register_model(self, file_name: str, version: int = 1, file_path: str = None, map50: float = None, map50_95: float = None, precision: float = None, recall: float = None) -> str:
         new_model = await self.repository.register_model(
             file_name=file_name,
             version=version,
@@ -26,8 +37,25 @@ class MlService:
         )
         return new_model.filename
     
+    @transactional
+    async def update_model(self, file_name: str, version: int = None, file_path: str = None, map50: float = None, map50_95: float = None, precision: float = None, recall: float = None) -> str:
+        update_model = await self.repository.update_model(
+            file_name=file_name,
+            version=version,
+            file_path=file_path,
+            map50=map50,
+            map50_95=map50_95,
+            precision=precision,
+            recall=recall
+        )
+        return update_model.filename
+
     async def get_model_by_name(self, file_name: str) -> dict:
         model = await self.repository.get_model_by_name_with_filemeta(file_name)
+
+        if model is None:
+            return model
+
         return {
             "file_name": model.filename, 
             "version": model.version,

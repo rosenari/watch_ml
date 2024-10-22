@@ -8,7 +8,6 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print('create_tables')
     await create_tables()
     yield
 

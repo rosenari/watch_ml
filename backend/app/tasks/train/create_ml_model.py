@@ -43,7 +43,12 @@ def create_yolo_model(model_name: str, version: int, output_dir: str, ml_runs_pa
             device='cuda:0',
         )
 
-        metrics = model.val()
+        metrics = model.val(
+            data=data_yaml,
+            imgsz=img_size,
+            batch=2,
+            device='cuda:0',
+        )
         map50 = metrics.box.map50
         map50_95 = metrics.box.map
         precision = metrics.box.mp

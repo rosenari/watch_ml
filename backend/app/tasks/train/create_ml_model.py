@@ -7,7 +7,7 @@ import shutil
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-def create_yolo_model(model_name: str, version: int, output_dir: str, ml_runs_path: str, status_handler=lambda ri_key, status: None):
+def create_yolo_model(model_name: str, file_name: str, version: int, output_dir: str, ml_runs_path: str, status_handler=lambda ri_key, status: None):
     logging.info("start create_yolo_model")
     # celery와 fastapi 의존성 분리로 인해 함수내에서 패키지 로딩 (yolo 패키지는 celery에만 존재)
     from ultralytics import YOLO
@@ -15,7 +15,6 @@ def create_yolo_model(model_name: str, version: int, output_dir: str, ml_runs_pa
 
     ML_REPO = 'model_repo'
     TRITON_REPO = 'triton_repo'
-    file_name = f"{model_name}.onnx"
     epochs = 1
     img_size = 640
 

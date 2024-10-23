@@ -133,6 +133,15 @@ class MlRepository:
             model.is_deploy = True
             await self.db.flush()
         return model
+    
+    async def undeploy_model(self, file_name: str) -> AiModel:
+        result = await self.db.execute(select(AiModel).filter(AiModel.filename == file_name))
+        model = result.scalars().first()
+
+        if model:
+            model.is_deploy = False
+            await self.db.flush()
+        return model
 
     # 상태 업데이트
     async def update_status(self, file_name: str, new_status: Status) -> None:

@@ -91,6 +91,8 @@ async def create_model(ml_service: MlService, model_name: str, version: int, zip
     datetime_str = datetime.now().strftime("%Y%m%d%H%M%S")
     output_dir = os.path.join(CELERY_ML_RUNS_PATH, f"{model_name}_{datetime_str}")
     zip_files = [os.path.join(CELERY_ARCHIVE_PATH, zip_file) for zip_file in zip_files]
+    await ml_service.update_status(file_name, 'running')
+    await ml_service.session.commit()  # 중간 상태 커밋
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir, exist_ok=True)

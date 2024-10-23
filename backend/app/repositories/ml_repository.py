@@ -29,6 +29,7 @@ class MlRepository:
             model.precision = precision
             model.recall = recall
             model.file_meta = file_meta
+            model.status = Status.PENDING
         else:
             model = AiModel(
                 filename=file_name,
@@ -37,7 +38,8 @@ class MlRepository:
                 map50_95=map50_95,
                 precision=precision,
                 recall=recall,
-                file_meta=file_meta
+                file_meta=file_meta,
+                status=Status.PENDING
             )
             self.db.add(model)
         await self.db.flush()
@@ -141,5 +143,4 @@ class MlRepository:
             raise ValueError(f"Model {file_name} not found in database.")
         
         model.status = new_status
-        self.db.add(model)
         await self.db.flush()

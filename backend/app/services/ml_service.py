@@ -15,8 +15,7 @@ class MlService:
 
 
     @transactional
-    async def init_model(self, model_name: str) -> int:
-        file_name = f"{model_name}.onnx"
+    async def init_model(self, file_name: str) -> int:
         model = await self.get_model_by_name(file_name)
         version = 1 if model is None else model['version'] + 1
         await self.register_model(file_name, version)
@@ -99,7 +98,6 @@ class MlService:
 
         return result
 
-
     @transactional
     async def delete_model(self, file_name: str) -> None:
         return await self.repository.delete_model(file_name)
@@ -107,6 +105,11 @@ class MlService:
     @transactional
     async def deploy_model(self, file_name: str) -> str:
         model = await self.repository.deploy_model(file_name)
+        return model.filename
+    
+    @transactional
+    async def undeploy_model(self, file_name: str) -> str:
+        model = await self.repository.undeploy_model(file_name)
         return model.filename
     
     @transactional

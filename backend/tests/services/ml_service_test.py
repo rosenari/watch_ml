@@ -86,7 +86,7 @@ async def test_get_model_by_name(ml_service: MlService, temp_file: str):
     assert model["map50_95"] == map50_95, f"Expected {map50_95}, got {model['map50_95']}."
     assert model["precision"] == precision, f"Expected {precision}, got {model['precision']}."
     assert model["recall"] == recall, f"Expected {recall}, got {model['recall']}."
-    assert model["status"] == "ready", f"Expected status 'ready', got {model['status']}."
+    assert model["status"] == "pending", f"Expected status 'ready', got {model['status']}."  # model 등록시 최초 pending 상태로 초기화됨.
 
 
 @pytest.mark.asyncio

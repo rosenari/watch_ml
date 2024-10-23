@@ -57,6 +57,7 @@ services:
       - DATABASE_PASSWORD=devpassword
       - DATABASE_HOST=db
       - DATABASE=watchml
+      - TRITON_GRPC_URL=triton:8001
     runtime: nvidia
     shm_size: '1g'
     command: celery -A app.tasks.main worker --loglevel=info --concurrency=1 --pool=threads

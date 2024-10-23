@@ -15,7 +15,7 @@ def create_yolo_model(model_name: str, file_name: str, version: int, output_dir:
 
     ML_REPO = 'model_repo'
     TRITON_REPO = 'triton_repo'
-    epochs = 1
+    epochs = 100
     img_size = 640
 
     # data.yaml 파일 경로 설정

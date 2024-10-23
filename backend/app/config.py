@@ -16,3 +16,5 @@ DATABASE_PASSWORD = os.environ.get('DATABASE_PASSWORD', 'devpassword')
 DATABASE_HOST = os.environ.get('DATABASE_HOST', 'localhost')
 DATABASE = os.environ.get('DATABASE', 'watchml')
 SQLALCHEMY_DATABASE_URL = os.environ.get('DATABASE_URL', f"postgresql+asyncpg://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_HOST}/{DATABASE}")
+
+TRITON_GRPC_URL = os.environ.get('TRITON_GRPC_URL', 'triton:8001')

@@ -1,9 +1,10 @@
 from celery import Celery
-from app.config import CELERY_BROKER_URL, CELERY_ARCHIVE_PATH, CELERY_ML_RUNS_PATH, DATASET_DIRECTORY, MODEL_DIRECTORY, MODEL_REPOSITORY
+from app.config import CELERY_BROKER_URL, CELERY_ARCHIVE_PATH, CELERY_ML_RUNS_PATH, DATASET_DIRECTORY, MODEL_DIRECTORY, MODEL_REPOSITORY, TRITON_GRPC_URL
 from app.tasks.valid.valid_archive import parse_and_verify_zip
 from app.tasks.train.merge_archive import merge_archive_files
 from app.tasks.train.create_ml_model import create_yolo_model
 from app.tasks.deploy.deploy_ml_model import deploy_to_triton
+from app.tasks.deploy.undeploy_ml_model import undeploy_from_triton
 from app.services.dataset_service import DataSetService
 from app.services.ml_service import MlService
 from app.database import get_redis, get_session
@@ -154,11 +155,37 @@ async def deploy_model(ml_service: MlService, model_name: str, model_type: str):
         file_path = model['file_path']
         version = model['version']
 
-        if deploy_to_triton(model_name, version, file_path, MODEL_REPOSITORY) is False:
+        if deploy_to_triton(model_name, model_type, version, file_path, MODEL_REPOSITORY, TRITON_GRPC_URL) is False:
             await ml_service.update_status(file_name, 'failed')
             return False
 
         await ml_service.deploy_model(file_name)  # deploy 표시
+        await ml_service.update_model(file_name, 'complete')  # 완료 표시
+
+        return True
+    except Exception as e:
+        logging.error(f"Unexpected Error in deploy_model task: {e}")
+        return False
+    
+
+@app.task
+def undeploy_model_task(model_name: str, model_type: str):
+    loop = get_event_loop()
+    return loop.run_until_complete(with_service(MlService, MODEL_DIRECTORY, undeploy_model, model_name=model_name, model_type=model_type))
+
+
+async def undeploy_model(ml_service: MlService, model_name: str, model_type: str):
+    try:
+        file_name = f"{model_name}.{model_type}"
+
+        await ml_service.update_status(file_name, 'running')
+        await ml_service.session.commit()  # 중간 상태 커밋
+
+        if undeploy_from_triton(model_name, MODEL_REPOSITORY, TRITON_GRPC_URL) is False:
+            await ml_service.update_status(file_name, 'failed')
+            return False
+
+        await ml_service.undeploy_model(file_name)  # deploy 표시
         await ml_service.update_model(file_name, 'complete')  # 완료 표시
 
         return True

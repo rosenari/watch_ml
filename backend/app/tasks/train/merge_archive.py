@@ -187,6 +187,7 @@ def update_label(src_label_file, dest_label_file, class_mapping):
 def merge_archive_files(zip_files, output_dir):
     logging.info("start merge_archive_files")
     result = True
+    total_classes = None
 
     try:
         merged_dirs = create_output_dirs(output_dir)
@@ -268,4 +269,4 @@ def merge_archive_files(zip_files, output_dir):
         result = False
         logging.error(f"An unexpected error occurred: {e}")
     finally:
-        return result
+        return result, total_classes

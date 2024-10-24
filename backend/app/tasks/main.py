@@ -111,8 +111,9 @@ async def create_model(ml_service: MlService, model_name: str, model_type: str, 
         else:
             await ml_service.update_status(file_name, 'failed')
             return False
-
-        if not merge_archive_files(zip_files, output_dir):  # 아카이브 병합
+        
+        merged_result, total_classes = merge_archive_files(zip_files, output_dir)
+        if not merged_result:  # 아카이브 병합
             await ml_service.update_status(file_name, 'failed')
             return False
 
@@ -128,6 +129,7 @@ async def create_model(ml_service: MlService, model_name: str, model_type: str, 
             await ml_service.update_status(file_name, 'failed')
             return False
         
+        model_info['classes'] = total_classes
         await ml_service.update_model(**model_info)
         await ml_service.update_status(file_name, 'complete')  # Task 완료 처리 (db)
         
@@ -160,7 +162,7 @@ async def deploy_model(ml_service: MlService, model_name: str, model_type: str):
             return False
 
         await ml_service.deploy_model(file_name)  # deploy 표시
-        await ml_service.update_model(file_name, 'complete')  # 완료 표시
+        await ml_service.update_status(file_name, 'complete')  # 완료 표시
 
         return True
     except Exception as e:
@@ -186,7 +188,7 @@ async def undeploy_model(ml_service: MlService, model_name: str, model_type: str
             return False
 
         await ml_service.undeploy_model(file_name)  # deploy 표시
-        await ml_service.update_model(file_name, 'complete')  # 완료 표시
+        await ml_service.update_status(file_name, 'complete')  # 완료 표시
 
         return True
     except Exception as e:

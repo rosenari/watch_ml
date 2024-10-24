@@ -24,7 +24,7 @@ class MlService:
 
 
     @transactional
-    async def register_model(self, file_name: str, version: int = 1, file_path: str = None, map50: float = None, map50_95: float = None, precision: float = None, recall: float = None) -> str:
+    async def register_model(self, file_name: str, version: int = 1, file_path: str = None, map50: float = None, map50_95: float = None, precision: float = None, recall: float = None, classes: list = None) -> str:
         new_model = await self.repository.register_model(
             file_name=file_name,
             version=version,
@@ -32,7 +32,8 @@ class MlService:
             map50=map50,
             map50_95=map50_95,
             precision=precision,
-            recall=recall
+            recall=recall,
+            classes=classes
         )
         return new_model.filename
     
@@ -59,13 +60,15 @@ class MlService:
         return {
             "file_name": model.filename, 
             "version": model.version,
-            "file_path": model.file_meta.filepath,
+            "file_path": model.file_meta.filepath if model.file_meta else None,
+            "file_size": model.file_meta.filesize if model.file_meta else None,
             "map50": model.map50, 
             "map50_95": model.map50_95, 
             "precision": model.precision, 
             "recall": model.recall,
             "classes": model.classes.split(',') if model.classes else None,
-            "status": model.status.value
+            "status": model.status.value,
+            "creation_date": model.file_meta.creation_time.strftime('%Y-%m-%d %H:%M:%S') if model.file_meta else None
             }
 
     async def get_model_list(self) -> List[dict]:
@@ -73,15 +76,15 @@ class MlService:
         return [{
             "file_name": model.filename,
             "version": model.version,
-            "file_path": model.file_meta.filepath,
-            "file_size": model.file_meta.filesize,
+            "file_path": model.file_meta.filepath if model.file_meta else None,
+            "file_size": model.file_meta.filesize if model.file_meta else None,
             "map50": model.map50, 
             "map50_95": model.map50_95, 
             "precision": model.precision, 
             "recall": model.recall,
             "classes": model.classes.split(',') if model.classes else None,
             "status": model.status.value,
-            "creation_date": model.file_meta.creation_time.strftime('%Y-%m-%d %H:%M:%S')
+            "creation_date": model.file_meta.creation_time.strftime('%Y-%m-%d %H:%M:%S') if model.file_meta else None
             } for model in models]
     
     async def get_model_status(self) -> List[dict]:
@@ -100,6 +103,10 @@ class MlService:
             })
 
         return result
+    
+    async def get_model_classes(self, file_name: str) -> List[str]:
+        model = await self.repository.get_model_by_name(file_name)
+        return model.classes.split(',') if model and model.classes else None
 
     @transactional
     async def delete_model(self, file_name: str) -> None:

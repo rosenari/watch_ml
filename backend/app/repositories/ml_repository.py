@@ -45,7 +45,7 @@ class MlRepository:
         await self.db.flush()
         return model
     
-    async def update_model(self, file_name: str, version: int = None, file_path: str = None, map50: float = None, map50_95: float = None, precision: float = None, recall: float = None) -> AiModel:
+    async def update_model(self, file_name: str, version: int = None, file_path: str = None, map50: float = None, map50_95: float = None, precision: float = None, recall: float = None, classes: list = None) -> AiModel:
         result = await self.db.execute(select(AiModel).filter(AiModel.filename == file_name))
         model = result.scalars().first()
 
@@ -72,6 +72,9 @@ class MlRepository:
         
         if recall is not None:
             model.recall = recall
+
+        if classes is not None and len(classes) > 0:
+            model.classes = ','.join(classes)
 
         await self.db.flush()  # 데이터베이스에 변경 사항을 반영
         return model

@@ -37,7 +37,7 @@ class MlService:
         return new_model.filename
     
     @transactional
-    async def update_model(self, file_name: str, version: int = None, file_path: str = None, map50: float = None, map50_95: float = None, precision: float = None, recall: float = None) -> str:
+    async def update_model(self, file_name: str, version: int = None, file_path: str = None, map50: float = None, map50_95: float = None, precision: float = None, recall: float = None, classes: list = None) -> str:
         update_model = await self.repository.update_model(
             file_name=file_name,
             version=version,
@@ -45,7 +45,8 @@ class MlService:
             map50=map50,
             map50_95=map50_95,
             precision=precision,
-            recall=recall
+            recall=recall,
+            classes=classes
         )
         return update_model.filename
 
@@ -63,6 +64,7 @@ class MlService:
             "map50_95": model.map50_95, 
             "precision": model.precision, 
             "recall": model.recall,
+            "classes": model.classes.split(',') if model.classes else None,
             "status": model.status.value
             }
 
@@ -77,6 +79,7 @@ class MlService:
             "map50_95": model.map50_95, 
             "precision": model.precision, 
             "recall": model.recall,
+            "classes": model.classes.split(',') if model.classes else None,
             "status": model.status.value,
             "creation_date": model.file_meta.creation_time.strftime('%Y-%m-%d %H:%M:%S')
             } for model in models]

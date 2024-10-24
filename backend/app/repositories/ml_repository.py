@@ -14,10 +14,11 @@ class MlRepository:
         self.file_repository = FileRepository(file_directory, db)
 
     # AI 모델 등록
-    async def register_model(self, file_name: str, version: int = 1, file_path: str = None, map50: float = None, map50_95: float = None, precision: float = None, recall: float = None) -> AiModel:
+    async def register_model(self, file_name: str, version: int = 1, file_path: str = None, map50: float = None, map50_95: float = None, precision: float = None, recall: float = None, classes: list = None) -> AiModel:
         result = await self.db.execute(select(AiModel).filter(AiModel.filename == file_name))
         model = result.scalars().first()
         file_meta = None
+        classes = ','.join(classes) if classes is not None else None
 
         if file_path is not None:
             file_meta = await self.file_repository.register_file(file_path)
@@ -30,6 +31,7 @@ class MlRepository:
             model.recall = recall
             model.file_meta = file_meta
             model.status = Status.PENDING
+            model.classes = classes
         else:
             model = AiModel(
                 filename=file_name,
@@ -38,6 +40,7 @@ class MlRepository:
                 map50_95=map50_95,
                 precision=precision,
                 recall=recall,
+                classes=classes,
                 file_meta=file_meta,
                 status=Status.PENDING
             )
@@ -73,7 +76,7 @@ class MlRepository:
         if recall is not None:
             model.recall = recall
 
-        if classes is not None and len(classes) > 0:
+        if classes is not None:
             model.classes = ','.join(classes)
 
         await self.db.flush()  # 데이터베이스에 변경 사항을 반영
@@ -91,7 +94,7 @@ class MlRepository:
         try:
             result = await self.db.execute(
                 select(AiModel)
-                .join(AiModel.file_meta)
+                .outerjoin(AiModel.file_meta)
                 .options(contains_eager(AiModel.file_meta))
                 .filter(and_(AiModel.is_delete == False, AiModel.filename == file_name)))
             model = result.scalars().one()
@@ -102,7 +105,7 @@ class MlRepository:
     async def get_all_models_with_filemeta(self) -> list[AiModel]:
         result = await self.db.execute(
             select(AiModel)
-            .join(AiModel.file_meta) 
+            .outerjoin(AiModel.file_meta) 
             .options(contains_eager(AiModel.file_meta))
             .filter(AiModel.is_delete == False)
             .order_by(desc(FileMeta.creation_time))

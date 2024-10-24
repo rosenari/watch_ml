@@ -49,15 +49,10 @@ def ml_service(redis, session, temp_directory) -> MlService:
 
 
 @pytest.mark.asyncio
-async def test_register_model(ml_service: MlService, temp_file: str):
-    file_name = os.path.basename(temp_file)
-    version = 1
-    map50 = 0.75
-    map50_95 = 0.65
-    precision = 0.8
-    recall = 0.9
+async def test_register_model(ml_service: MlService):
+    file_name = 'temp_register_model.onnx'
 
-    await ml_service.register_model(file_name, version, temp_file, map50, map50_95, precision, recall)
+    await ml_service.register_model(file_name)
 
     model_list = await ml_service.get_model_list()
     model_names = [model['file_name'] for model in model_list]
@@ -73,9 +68,9 @@ async def test_get_model_by_name(ml_service: MlService, temp_file: str):
     map50_95 = 0.65
     precision = 0.8
     recall = 0.9
+    classes = ['car']
 
-    await ml_service.register_model(file_name, version, temp_file, map50, map50_95, precision, recall)
-
+    await ml_service.register_model(file_name, version, temp_file, map50, map50_95, precision, recall, classes)
     model = await ml_service.get_model_by_name(file_name)
 
     assert model is not None, f"Model {file_name} was not found."
@@ -86,7 +81,38 @@ async def test_get_model_by_name(ml_service: MlService, temp_file: str):
     assert model["map50_95"] == map50_95, f"Expected {map50_95}, got {model['map50_95']}."
     assert model["precision"] == precision, f"Expected {precision}, got {model['precision']}."
     assert model["recall"] == recall, f"Expected {recall}, got {model['recall']}."
+    assert model["classes"] == classes, f"Expected {classes}, got {model['classes']}."
     assert model["status"] == "pending", f"Expected status 'ready', got {model['status']}."  # model 등록시 최초 pending 상태로 초기화됨.
+
+
+@pytest.mark.asyncio
+async def test_update_model(ml_service: MlService, temp_file: str):
+    file_name = os.path.basename(temp_file)
+    version = 1
+    map50 = 0.75
+    map50_95 = 0.65
+    precision = 0.8
+    recall = 0.9
+
+    await ml_service.register_model(file_name, version, temp_file, map50, map50_95, precision, recall)
+
+    new_version = 2
+    classes = ['car']
+
+    await ml_service.update_model(file_name, version=new_version, classes=['car'])
+    model = await ml_service.get_model_by_name(file_name)
+
+    assert model is not None, f"Model {file_name} was not found."
+    assert model["file_name"] == file_name, f"Expected {file_name}, got {model['file_name']}."
+    assert model["version"] == new_version, f"Expected {new_version}, got {model['version']}."
+    assert model["file_path"] == temp_file, f"Expected {temp_file}, got {model['file_path']}."
+    assert model["map50"] == map50, f"Expected {map50}, got {model['map50']}."
+    assert model["map50_95"] == map50_95, f"Expected {map50_95}, got {model['map50_95']}."
+    assert model["precision"] == precision, f"Expected {precision}, got {model['precision']}."
+    assert model["recall"] == recall, f"Expected {recall}, got {model['recall']}."
+    assert model["classes"] == classes, f"Expected {classes}, got {model['classes']}."
+    assert model["status"] == "pending", f"Expected status 'ready', got {model['status']}."  # model 등록시 최초 pending 상태로 초기화됨.
+
 
 
 @pytest.mark.asyncio
@@ -130,7 +156,18 @@ async def test_get_model_list(ml_service: MlService, temp_directory):
 
 
 @pytest.mark.asyncio
-async def test_update_model_status(ml_service: MlService, temp_file: str):
+async def test_get_model_classes(ml_service: MlService):
+    file_name = 'test_model.onnx'
+    classes = ['truck', 'bus']
+    await ml_service.register_model(file_name=file_name, classes=classes)
+
+    model_classes = await ml_service.get_model_classes(file_name)
+
+    assert classes == model_classes, f"Model classes was not registered to {classes}."
+
+
+@pytest.mark.asyncio
+async def test_update_status(ml_service: MlService, temp_file: str):
     file_name = os.path.basename(temp_file)
     version = 1
     map50 = 0.75

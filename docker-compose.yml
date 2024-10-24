@@ -100,6 +100,7 @@ services:
   triton:
     image: nvcr.io/nvidia/tritonserver:24.08-py3
     container_name: triton_server
+    restart: always
     ports:
       - '8000:8000'
       - '8001:8001'
@@ -115,7 +116,7 @@ services:
         reservations:
           devices:
             - capabilities: [gpu] # GPU 사용 설정
-    command: /bin/bash -c "mkdir -p /src/runs/triton_repo && tritonserver --model-repository=/src/runs/triton_repo"
+    command: /bin/bash -c "mkdir -p /src/runs/triton_repo && tritonserver --model-repository=/src/runs/triton_repo --model-control-mode=explicit"
     networks:
       - monitoring_network
 

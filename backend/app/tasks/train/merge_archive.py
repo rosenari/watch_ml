@@ -79,27 +79,15 @@ def copy_files(source_dir: str, dest_dir: str, file_prefix: str):
         shutil.copy(source_file_path, os.path.join(dest_dir, new_file_name))
 
 
-
-# classes.txt 병합 (train, val, test 각각의 디렉터리에서 classes.txt를 병합)
-def merge_classes_per_split(classes_txt_path, merged_classes):
-    if os.path.exists(classes_txt_path):
-        with open(classes_txt_path, 'r') as f:
-            classes = f.read().splitlines()
-            merged_classes.update(classes)
-    
-    return merged_classes
+# data.yaml로 부터 클래스 정보 얻어오기
+def get_classes_from_yaml(data):
+    if 'names' in data:
+        return data['names']
+    return []
 
 
-
-# 병합된 classes.txt 생성 (각각의 train, val, test에 따로 생성)
-def write_merged_classes(output_dir, merged_classes_per_split):
-    total_classes = set()
-
-    for split in ['train', 'val', 'test']:
-        total_classes.update(merged_classes_per_split[split])
-
-    total_classes = sorted(list(total_classes))
-
+# classes.txt 생성 (각각의 train, val, test에 따로 생성)
+def write_merged_classes(output_dir, total_classes):
     for split in ['train', 'val', 'test']:
         merged_classes_txt_path = os.path.join(output_dir, 'labels', split, 'classes.txt')
         with open(merged_classes_txt_path, 'w') as f:
@@ -150,18 +138,6 @@ def split_train_to_test(merged_dirs):
             shutil.move(src_label, dest_label)
 
 
-# get class mapper: index_to_class
-def get_class_mapper(source_label_dir):
-    table = []
-    classes_txt_path = os.path.join(source_label_dir, 'classes.txt')
-
-    with open(classes_txt_path, 'r') as f:
-        classes = f.read().splitlines()
-        table = {str(i): class_name for i, class_name in enumerate(classes)}
-    
-    return table
-
-
 def update_label(src_label_file, dest_label_file, class_mapping):
     """
     라벨 파일의 인덱스를 입력된 class_mapping에 따라 매핑하여 저장
@@ -187,15 +163,10 @@ def update_label(src_label_file, dest_label_file, class_mapping):
 def merge_archive_files(zip_files, output_dir):
     logging.info("start merge_archive_files")
     result = True
-    total_classes = None
+    total_classes = set()
 
     try:
         merged_dirs = create_output_dirs(output_dir)
-        merged_classes = {
-            'train': set(),
-            'val': set(),
-            'test': set()
-        }
         merged_data_store_path = {
             'train': merged_dirs['images']['train'],
             'val': merged_dirs['images']['val'],
@@ -211,6 +182,12 @@ def merge_archive_files(zip_files, output_dir):
 
                 if yaml_path:
                     data = load_data_yaml(yaml_path)
+                    
+                    classes = get_classes_from_yaml(data)
+                    total_classes.update(classes)
+
+                    index_to_class = {str(i): class_name for i, class_name in enumerate(classes)}
+ 
                     for key in ['train', 'val', 'test']:
                         if key not in data:
                             continue
@@ -226,15 +203,11 @@ def merge_archive_files(zip_files, output_dir):
 
                         source_label_dir = os.path.join(temp_dir.name, data[key].replace('images', 'labels'))
 
-                        # 라벨의 인덱스를 모두 class명으로 수정 및 merged_classes 갱신
-                        index_to_class = get_class_mapper(source_label_dir)
-
                         # 라벨 파일의 인덱스 정보를 클래스 이름으로 변환하여 dest에 저장
                         for label_file in os.listdir(source_label_dir):
                             src_label_file = os.path.join(source_label_dir, label_file)
 
                             if label_file == 'classes.txt':
-                                merged_classes[key] = merge_classes_per_split(os.path.join(source_label_dir, label_file), merged_classes[key])
                                 continue
                             
                             dest_label_file = os.path.join(merged_dirs['labels'][key], f"{hash}_{label_file}")
@@ -247,7 +220,7 @@ def merge_archive_files(zip_files, output_dir):
             logging.warning("Because test data does not exist, part of the train data is extracted.")
             split_train_to_test(merged_dirs)
 
-        total_classes = write_merged_classes(output_dir, merged_classes)
+        total_classes = write_merged_classes(output_dir, total_classes)
         logging.info("classes.txt has been created.")
 
         class_to_index = {class_name: str(i) for i, class_name in enumerate(total_classes)}

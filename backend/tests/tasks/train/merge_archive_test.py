@@ -3,8 +3,8 @@ import os
 import zipfile
 import tempfile
 import yaml
-from app.tasks.train.merge_archive import (extract_zip_to_temp, get_label_dirs, copy_files, merge_classes_per_split, 
-                         split_train_to_test, get_class_mapper, update_label, merge_archive_files, find_yaml_path, load_data_yaml,
+from app.tasks.train.merge_archive import (extract_zip_to_temp, get_label_dirs, copy_files, 
+                         split_train_to_test, get_classes_from_yaml, update_label, merge_archive_files, find_yaml_path, load_data_yaml,
                          create_output_dirs)
 
 @pytest.fixture
@@ -24,10 +24,6 @@ def sample_zip_file():
         zipf.writestr('labels/val/sample_image_2.txt', '1 0.5 0.5 1 1')
         zipf.writestr('images/test/sample_image_3.jpg', '')
         zipf.writestr('labels/test/sample_image_3.txt', '0 0.5 0.5 1 1')
-
-        zipf.writestr('labels/train/classes.txt', 'class1\nclass2\n')
-        zipf.writestr('labels/val/classes.txt', 'class1\nclass2\n')
-        zipf.writestr('labels/test/classes.txt', 'class1\nclass2\n')
 
     temp_zip.close()
     yield temp_zip.name
@@ -67,22 +63,6 @@ def test_copy_files(sample_zip_file, tmpdir):
     temp_dir.cleanup()
 
 
-def test_merge_classes_per_split(sample_zip_file):
-    temp_dir = extract_zip_to_temp(sample_zip_file)
-    yaml_path = find_yaml_path(temp_dir.name)
-    data = load_data_yaml(yaml_path)
-
-    merged_classes = set()
-    label_dir = os.path.join(temp_dir.name, data['train'].replace('images', 'labels'))
-    
-    merged_classes = merge_classes_per_split(os.path.join(label_dir, 'classes.txt'), merged_classes)
-    
-    assert 'class1' in merged_classes
-    assert 'class2' in merged_classes
-    
-    temp_dir.cleanup()
-
-
 def test_split_train_to_test(tmpdir):
     merged_dirs = create_output_dirs(tmpdir)
 
@@ -96,33 +76,20 @@ def test_split_train_to_test(tmpdir):
     assert len(os.listdir(merged_dirs['images']['train'])) == 9
 
 
-def test_get_class_mapper(sample_zip_file):
-    temp_dir = extract_zip_to_temp(sample_zip_file)
-    yaml_path = find_yaml_path(temp_dir.name)
-    data = load_data_yaml(yaml_path)
-
-    label_dir = os.path.join(temp_dir.name, data['train'].replace('images', 'labels'))
-    class_mapper = get_class_mapper(label_dir)
-
-    assert class_mapper['0'] == 'class1'
-    assert class_mapper['1'] == 'class2'
-
-    temp_dir.cleanup()
-
-
 def test_update_label(sample_zip_file, tmpdir):
     temp_dir = extract_zip_to_temp(sample_zip_file)
     yaml_path = find_yaml_path(temp_dir.name)
     data = load_data_yaml(yaml_path)
+    classes = get_classes_from_yaml(data)
 
     label_dir = os.path.join(temp_dir.name, data['train'].replace('images', 'labels'))
-    class_mapper = get_class_mapper(label_dir)
+    index_to_class = {str(i): class_name for i, class_name in enumerate(classes)}
 
 
     src_label_file = os.path.join(label_dir, 'sample_image_1.txt')
     dest_label_file = os.path.join(tmpdir, 'sample_image_1.txt')
 
-    update_label(src_label_file, dest_label_file, class_mapper)
+    update_label(src_label_file, dest_label_file, index_to_class)
 
     with open(dest_label_file, 'r') as f:
         lines = f.readlines()

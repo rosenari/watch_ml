@@ -1,11 +1,27 @@
 from sqlalchemy import desc, and_
-from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm import contains_eager, selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.exc import NoResultFound
 from app.entity import AiModel, Status, FileMeta
 from app.config import MODEL_DIRECTORY
 from app.repositories.file_repository import FileRepository
+from dataclasses import dataclass
+from typing import List, Optional
+
+
+@dataclass
+class ModelInfo:
+    model_name: str
+    base_model_name: str = None
+    version: int = 1
+    model_path: str = None
+    deploy_path: str = None
+    map50: Optional[float] = None
+    map50_95: Optional[float] = None
+    precision: Optional[float] = None
+    recall: Optional[float] = None
+    classes: Optional[List[str]] = None
 
 
 class MlRepository:
@@ -14,125 +30,115 @@ class MlRepository:
         self.file_repository = FileRepository(file_directory, db)
 
     # AI 모델 등록
-    async def register_model(self, file_name: str, version: int = 1, file_path: str = None, map50: float = None, map50_95: float = None, precision: float = None, recall: float = None, classes: list = None) -> AiModel:
-        result = await self.db.execute(select(AiModel).filter(AiModel.filename == file_name))
-        model = result.scalars().first()
-        file_meta = None
-        classes = ','.join(classes) if classes is not None else None
+    async def register_model(self, model_info: ModelInfo) -> AiModel:
+        model = await self.get_model_by_name(model_info.model_name)
 
-        if file_path is not None:
-            file_meta = await self.file_repository.register_file(file_path)
-
-        if model is not None:
-            model.version = version
-            model.map50 = map50
-            model.map50_95 =  map50_95
-            model.precision = precision
-            model.recall = recall
-            model.file_meta = file_meta
-            model.status = Status.PENDING
-            model.classes = classes
-        else:
-            model = AiModel(
-                filename=file_name,
-                version=version,
-                map50=map50,
-                map50_95=map50_95,
-                precision=precision,
-                recall=recall,
-                classes=classes,
-                file_meta=file_meta,
-                status=Status.PENDING
-            )
+        base_model = await self.get_model_by_name(model_info.base_model_name) if model_info.base_model_name else None
+        model_file = await self.file_repository.register_file(model_info.model_path) if model_info.model_path else None
+        deploy_file = await self.file_repository.register_file(model_info.deploy_path) if model_info.deploy_path else None
+        
+        if model is None:
+            # 새로운 모델 생성
+            model = AiModel(modelname=model_info.model_name, status=Status.PENDING)
             self.db.add(model)
+
+        await self._update_model_attributes(model, model_info, base_model, model_file, deploy_file)
         await self.db.flush()
         return model
     
-    async def update_model(self, file_name: str, version: int = None, file_path: str = None, map50: float = None, map50_95: float = None, precision: float = None, recall: float = None, classes: list = None) -> AiModel:
-        result = await self.db.execute(select(AiModel).filter(AiModel.filename == file_name))
-        model = result.scalars().first()
+    # AI 모델 업데이트
+    async def update_model(self, model_info: ModelInfo) -> AiModel:
+        model = await self.get_model_by_name(model_info.model_name)
+        if model is None:
+            raise FileNotFoundError(f"Model {model_info.model_name} not found in database.")
 
-        if not model:
-            raise FileNotFoundError(f"Model {file_name} not found in database.")
-        
         model.is_delete = False
-        
-        if version is not None:
-            model.version = version
-        
-        if file_path is not None:
-            file_meta = await self.file_repository.register_file(file_path)
-            model.file_meta = file_meta
-        
-        if map50 is not None:
-            model.map50 = map50
-        
-        if map50_95 is not None:
-            model.map50_95 = map50_95
-        
-        if precision is not None:
-            model.precision = precision
-        
-        if recall is not None:
-            model.recall = recall
+        model.is_deploy = False
+        base_model = await self.get_model_by_name(model_info.base_model_name) if model_info.base_model_name else None
+        model_file = await self.file_repository.register_file(model_info.model_path) if model_info.model_path else None
+        deploy_file = await self.file_repository.register_file(model_info.deploy_path) if model_info.deploy_path else None
 
-        if classes is not None:
-            model.classes = ','.join(classes)
-
-        await self.db.flush()  # 데이터베이스에 변경 사항을 반영
+        await self._update_model_attributes(model, model_info, base_model, model_file, deploy_file)
+        await self.db.flush()
         return model
+    
+    async def _update_model_attributes(self, model: AiModel, model_info: ModelInfo, base_model: AiModel, model_file: Optional[FileMeta] = None, deploy_file: Optional[FileMeta] = None):
+        model.version = model_info.version or model.version
+        model.map50 = model_info.map50 or model.map50
+        model.map50_95 = model_info.map50_95 or model.map50_95
+        model.precision = model_info.precision or model.precision
+        model.recall = model_info.recall or model.recall
+        model.classes = ','.join(model_info.classes) if model_info.classes else model.classes
+        model.base_model = base_model
+        model.model_file = model_file or model.model_file
+        model.deploy_file = deploy_file or model.deploy_file
+        model.is_deploy = False
+        model.is_delete = False
+        model.status = Status.PENDING
 
-    async def get_model_by_name(self, file_name: str) -> AiModel:
+    # 모델 정보 가져오기
+    async def get_model_by_name(self, model_name: str) -> AiModel:
         try:
-            result = await self.db.execute(select(AiModel).filter(AiModel.filename == file_name))
+            result = await self.db.execute(select(AiModel).filter(AiModel.modelname == model_name))
             model = result.scalars().one()
             return model
         except NoResultFound:
             return None
         
-    async def get_model_by_name_with_filemeta(self, file_name: str) -> AiModel:
+    # 모델 정보 가져오기 (연관 테이블도)
+    async def get_model_by_name_with_filemeta(self, model_name: str) -> AiModel:
         try:
             result = await self.db.execute(
                 select(AiModel)
-                .outerjoin(AiModel.file_meta)
-                .options(contains_eager(AiModel.file_meta))
-                .filter(and_(AiModel.is_delete == False, AiModel.filename == file_name)))
+                .options(
+                    selectinload(AiModel.model_file),
+                    selectinload(AiModel.deploy_file),
+                    selectinload(AiModel.base_model),
+                )
+                .filter(and_(AiModel.is_delete == False, AiModel.modelname == model_name))
+            )
             model = result.scalars().one()
             return model
         except NoResultFound:
             return None
-
-    async def get_all_models_with_filemeta(self) -> list[AiModel]:
-        result = await self.db.execute(
-            select(AiModel)
-            .outerjoin(AiModel.file_meta) 
-            .options(contains_eager(AiModel.file_meta))
-            .filter(AiModel.is_delete == False)
-            .order_by(desc(FileMeta.creation_time))
-        )
-        models = result.scalars().all()
-
-        return models
-    
+        
+    # 모든 모델 정보 가져오기 
     async def get_all_models(self) -> list[AiModel]:
         result = await self.db.execute(select(AiModel).filter(AiModel.is_delete == False))
         models = result.scalars().all()
 
         return models
 
-    async def delete_model(self, file_name: str) -> bool:
-        result = await self.db.execute(select(AiModel).filter(AiModel.filename == file_name))
+    # 모든 모델 정보 가져오기 (연관 테이블도)
+    async def get_all_models_with_filemeta(self) -> list[AiModel]:
+        result = await self.db.execute(
+        select(AiModel)
+        .options(
+            selectinload(AiModel.model_file),
+            selectinload(AiModel.deploy_file),
+            selectinload(AiModel.base_model)
+        )
+        .filter(AiModel.is_delete == False)
+        .order_by(desc(FileMeta.creation_time))
+        )
+        models = result.scalars().all()
+
+        return models
+
+    # 모델 삭제
+    async def delete_model(self, model_name: str) -> bool:
+        result = await self.db.execute(select(AiModel).filter(AiModel.modelname == model_name))
         model = result.scalars().first()
         
         if not model:
-            raise FileNotFoundError(f"Model {file_name} not found in database.")
+            raise FileNotFoundError(f"Model {model_name} not found in database.")
         
         model.is_delete = True
         await self.db.flush()
 
     # 모델을 배포 상태로 변경
-    async def deploy_model(self, file_name: str) -> AiModel:
-        result = await self.db.execute(select(AiModel).filter(AiModel.filename == file_name))
+    async def deploy_model(self, model_name: str) -> AiModel:
+        result = await self.db.execute(select(AiModel).filter(AiModel.modelname == model_name))
         model = result.scalars().first()
 
         if model:
@@ -140,8 +146,9 @@ class MlRepository:
             await self.db.flush()
         return model
     
-    async def undeploy_model(self, file_name: str) -> AiModel:
-        result = await self.db.execute(select(AiModel).filter(AiModel.filename == file_name))
+    # 모델을 미배포 상태로 변경
+    async def undeploy_model(self, model_name: str) -> AiModel:
+        result = await self.db.execute(select(AiModel).filter(AiModel.modelname == model_name))
         model = result.scalars().first()
 
         if model:
@@ -149,13 +156,13 @@ class MlRepository:
             await self.db.flush()
         return model
 
-    # 상태 업데이트
-    async def update_status(self, file_name: str, new_status: Status) -> None:
-        result = await self.db.execute(select(AiModel).filter(AiModel.filename == file_name))
+    # 모델 상태 업데이트
+    async def update_status(self, model_name: str, new_status: Status) -> None:
+        result = await self.db.execute(select(AiModel).filter(AiModel.modelname == model_name))
         model = result.scalars().first()
 
         if not model:
-            raise ValueError(f"Model {file_name} not found in database.")
+            raise ValueError(f"Model {model_name} not found in database.")
         
         model.status = new_status
         await self.db.flush()

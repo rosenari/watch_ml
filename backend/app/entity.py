@@ -1,7 +1,7 @@
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 from app.database import Base, async_engine
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, UniqueConstraint, Enum
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, Enum
 from sqlalchemy.sql import func
 import enum
 
@@ -28,7 +28,8 @@ class FileMeta(Base):
     creation_time = Column(DateTime(timezone=True), default=func.now())
 
     dataset = relationship("DataSet", uselist=False, back_populates="file_meta")
-    ai_model = relationship("AiModel", uselist=False, back_populates="file_meta")
+    ai_model_file = relationship("AiModel", foreign_keys="[AiModel.model_file_id]", back_populates="model_file")
+    ai_deploy_file = relationship("AiModel", foreign_keys="[AiModel.deploy_file_id]", back_populates="deploy_file")
     inference_file_original = relationship("InferenceFile", foreign_keys="[InferenceFile.original_file_id]", back_populates="original_file")
     inference_file_generated = relationship("InferenceFile", foreign_keys="[InferenceFile.generated_file_id]", back_populates="generated_file")
 
@@ -42,26 +43,32 @@ class DataSet(Base):
     is_delete = Column(Boolean, default=False)
 
     file_meta_id = Column(Integer, ForeignKey('file_meta.id'), nullable=False)
-    file_meta = relationship("FileMeta", back_populates="dataset", cascade="all, delete")
+    file_meta = relationship("FileMeta", back_populates="dataset")
 
 
 class AiModel(Base):
     __tablename__ = 'ai_model'
 
     id = Column(Integer, primary_key=True)
-    filename = Column(String, unique=True, nullable=False)
+    modelname = Column(String, unique=True, nullable=False)
     version = Column(Integer, nullable=False, default=1)
     map50 = Column(Float, nullable=True)        
     map50_95 = Column(Float, nullable=True)     
     precision = Column(Float, nullable=True)   
     recall = Column(Float, nullable=True)     
-    classes = Column(String, nullable=True)  
-    is_deploy = Column(Boolean, default=False)
+    classes = Column(String, nullable=True)
     status = Column(Enum(Status), nullable=False, default=Status.READY)
     is_delete = Column(Boolean, default=False)
+    is_deploy = Column(Boolean, default=False)
 
-    file_meta_id = Column(Integer, ForeignKey('file_meta.id'), nullable=True)
-    file_meta = relationship("FileMeta", back_populates="ai_model", cascade="all, delete")
+    base_model_id = Column(Integer, ForeignKey('ai_model.id'), nullable=True)  # 자기참조 외래 키
+    base_model = relationship("AiModel", remote_side=[id], backref="derived_models")
+
+    model_file_id = Column(Integer, ForeignKey('file_meta.id'), nullable=True)
+    model_file = relationship("FileMeta", foreign_keys=[model_file_id], back_populates="ai_model_file")  # 모델 생성 시
+
+    deploy_file_id = Column(Integer, ForeignKey('file_meta.id'), nullable=True)
+    deploy_file = relationship("FileMeta", foreign_keys=[deploy_file_id], back_populates="ai_deploy_file")
 
 
 class InferenceFile(Base):
@@ -71,12 +78,13 @@ class InferenceFile(Base):
 
     original_file_name = Column(String, nullable=True)
     generated_file_name = Column(String, nullable=True)
-    original_file_id = Column(Integer, ForeignKey('file_meta.id'), nullable=True)
-    generated_file_id = Column(Integer, ForeignKey('file_meta.id'), nullable=True)
     file_type = Column(Enum(FileType), nullable=False, default=FileType.PHOTO)
     is_delete = Column(Boolean, default=False)
 
+    original_file_id = Column(Integer, ForeignKey('file_meta.id'), nullable=True)
     original_file = relationship("FileMeta", foreign_keys=[original_file_id], back_populates="inference_file_original")
+
+    generated_file_id = Column(Integer, ForeignKey('file_meta.id'), nullable=True)
     generated_file = relationship("FileMeta", foreign_keys=[generated_file_id], back_populates="inference_file_generated")
 
     status = Column(Enum(Status), nullable=False, default=Status.READY)

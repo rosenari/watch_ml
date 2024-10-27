@@ -5,18 +5,21 @@ from app.database import get_redis, get_session
 from app.repositories.dataset_repository import DatasetRepository
 from app.util import transactional, format_file_size
 from app.entity import Status
+import os
 
 
 class DataSetService:
-    def __init__(self, redis, session, file_directory=DATASET_DIRECTORY):
+    def __init__(self, redis, session, dir = DATASET_DIRECTORY):
         self.redis = redis
         self.session = session
-        self.repository = DatasetRepository(file_directory=file_directory, db=session)
+        self.dir = dir
+        self.repository = DatasetRepository(db=session)
 
     @transactional
     async def upload_file(self, file: UploadFile) -> str:
         content = await file.read()
-        dataset = await self.repository.save_file(file.filename, content)
+        file_path = os.path.join(self.dir, file.filename)
+        dataset = await self.repository.save_file(file_path, content)
         return dataset.filename
 
     @transactional

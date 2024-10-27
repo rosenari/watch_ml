@@ -7,16 +7,18 @@ from sqlalchemy.future import select
 from app.config import DATASET_DIRECTORY
 from app.entity import DataSet, Status, FileMeta
 from app.repositories.file_repository import FileRepository
+import os
 
 
 
 class DatasetRepository:
-    def __init__(self, file_directory: str = DATASET_DIRECTORY, db: AsyncSession = None):
+    def __init__(self, db: AsyncSession = None):
         self.db = db
-        self.file_repository = FileRepository(file_directory, db)
+        self.file_repo = FileRepository(db)
 
-    async def save_file(self, file_name: str, content: bytes) -> DataSet:
-        file_meta = await self.file_repository.save_file(file_name, content)
+    async def save_file(self, file_path: str, content: bytes) -> DataSet:
+        file_name = os.path.basename(file_path)
+        file_meta = await self.file_repo.save_file(file_path, content)
         result = await self.db.execute(select(DataSet).filter(DataSet.filename == file_name))
         dataset = result.scalars().first()
 

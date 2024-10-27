@@ -33,6 +33,14 @@ class FileMeta(Base):
     inference_file_original = relationship("InferenceFile", foreign_keys="[InferenceFile.original_file_id]", back_populates="original_file")
     inference_file_generated = relationship("InferenceFile", foreign_keys="[InferenceFile.generated_file_id]", back_populates="generated_file")
 
+    def serialize(self) -> dict:
+        return {
+            "id": self.id,
+            "filepath": self.filepath,
+            "filesize": self.filesize,
+            "creation_time": self.creation_time.strftime('%Y-%m-%d %H:%M:%S') if self.creation_time else None,
+        }
+
 
 class DataSet(Base):
     __tablename__ = 'dataset'
@@ -44,6 +52,15 @@ class DataSet(Base):
 
     file_meta_id = Column(Integer, ForeignKey('file_meta.id'), nullable=False)
     file_meta = relationship("FileMeta", back_populates="dataset")
+
+    def serialize(self) -> dict:
+        return {
+            "id": self.id,
+            "filename": self.filename,
+            "status": self.status.value,
+            "is_delete": self.is_delete,
+            "file_meta": self.file_meta.serialize() if self.file_meta else None,
+        }
 
 
 class AiModel(Base):
@@ -70,6 +87,24 @@ class AiModel(Base):
     deploy_file_id = Column(Integer, ForeignKey('file_meta.id'), nullable=True)
     deploy_file = relationship("FileMeta", foreign_keys=[deploy_file_id], back_populates="ai_deploy_file")
 
+    def serialize(self) -> dict:
+        return {
+            "id": self.id,
+            "modelname": self.modelname,
+            "version": self.version,
+            "map50": self.map50,
+            "map50_95": self.map50_95,
+            "precision": self.precision,
+            "recall": self.recall,
+            "classes": self.classes.split(',') if self.classes else None,
+            "status": self.status.value,
+            "is_delete": self.is_delete,
+            "is_deploy": self.is_deploy,
+            "base_model": self.base_model.serialize() if self.base_model else None,
+            "model_file": self.model_file.serialize() if self.model_file else None,
+            "deploy_file": self.deploy_file.serialize() if self.deploy_file else None,
+        }
+
 
 class InferenceFile(Base):
     __tablename__ = 'inference_files'
@@ -88,6 +123,18 @@ class InferenceFile(Base):
     generated_file = relationship("FileMeta", foreign_keys=[generated_file_id], back_populates="inference_file_generated")
 
     status = Column(Enum(Status), nullable=False, default=Status.READY)
+
+    def serialize(self) -> dict:
+        return {
+            "id": self.id,
+            "original_file_name": self.original_file_name,
+            "generated_file_name": self.generated_file_name,
+            "file_type": self.file_type.value,
+            "is_delete": self.is_delete,
+            "status": self.status.value,
+            "original_file": self.original_file.serialize() if self.original_file else None,
+            "generated_file": self.generated_file.serialize() if self.generated_file else None,
+        }
 
 
 async def create_tables():

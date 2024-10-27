@@ -1,74 +1,59 @@
 from sqlalchemy import desc, and_
-from sqlalchemy.orm import contains_eager, selectinload
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.exc import NoResultFound
 from app.entity import AiModel, Status, FileMeta
-from app.config import MODEL_DIRECTORY
 from app.repositories.file_repository import FileRepository
-from dataclasses import dataclass
-from typing import List, Optional
-
-
-@dataclass
-class ModelInfo:
-    model_name: str
-    base_model_name: str = None
-    version: int = 1
-    model_path: str = None
-    deploy_path: str = None
-    map50: Optional[float] = None
-    map50_95: Optional[float] = None
-    precision: Optional[float] = None
-    recall: Optional[float] = None
-    classes: Optional[List[str]] = None
+from app.dto import AiModelDTO
+from typing import Optional
 
 
 class MlRepository:
-    def __init__(self, file_directory: str = MODEL_DIRECTORY, db: AsyncSession = None):
+    def __init__(self, db: AsyncSession = None):
         self.db = db
-        self.file_repository = FileRepository(file_directory, db)
+        self.file_repo = FileRepository(db)
 
     # AI 모델 등록
-    async def register_model(self, model_info: ModelInfo) -> AiModel:
-        model = await self.get_model_by_name(model_info.model_name)
+    async def register_model(self, ai_model_dto: AiModelDTO) -> AiModel:
+        model = await self.get_model_by_name(ai_model_dto.model_name)
 
-        base_model = await self.get_model_by_name(model_info.base_model_name) if model_info.base_model_name else None
-        model_file = await self.file_repository.register_file(model_info.model_path) if model_info.model_path else None
-        deploy_file = await self.file_repository.register_file(model_info.deploy_path) if model_info.deploy_path else None
+        base_model = await self.get_model_by_name(ai_model_dto.base_model_name) if ai_model_dto.base_model_name else None
+        model_file = await self.file_repo.register_file(ai_model_dto.model_path) if ai_model_dto.model_path else None
+        deploy_file = await self.file_repo.register_file(ai_model_dto.deploy_path) if ai_model_dto.deploy_path else None
         
         if model is None:
             # 새로운 모델 생성
-            model = AiModel(modelname=model_info.model_name, status=Status.PENDING)
+            model = AiModel(modelname=ai_model_dto.model_name, status=Status.PENDING)
             self.db.add(model)
 
-        await self._update_model_attributes(model, model_info, base_model, model_file, deploy_file)
+        await self._update_model_attributes(model, ai_model_dto, base_model, model_file, deploy_file)
         await self.db.flush()
         return model
     
     # AI 모델 업데이트
-    async def update_model(self, model_info: ModelInfo) -> AiModel:
-        model = await self.get_model_by_name(model_info.model_name)
+    async def update_model(self, ai_model_dto: AiModelDTO) -> AiModel:
+        model = await self.get_model_by_name(ai_model_dto.model_name)
         if model is None:
-            raise FileNotFoundError(f"Model {model_info.model_name} not found in database.")
+            raise FileNotFoundError(f"Model {ai_model_dto.model_name} not found in database.")
 
         model.is_delete = False
         model.is_deploy = False
-        base_model = await self.get_model_by_name(model_info.base_model_name) if model_info.base_model_name else None
-        model_file = await self.file_repository.register_file(model_info.model_path) if model_info.model_path else None
-        deploy_file = await self.file_repository.register_file(model_info.deploy_path) if model_info.deploy_path else None
+        base_model = await self.get_model_by_name(ai_model_dto.base_model_name) if ai_model_dto.base_model_name else None
+        model_file = await self.file_repo.register_file(ai_model_dto.model_path) if ai_model_dto.model_path else None
+        deploy_file = await self.file_repo.register_file(ai_model_dto.deploy_path) if ai_model_dto.deploy_path else None
 
-        await self._update_model_attributes(model, model_info, base_model, model_file, deploy_file)
+        await self._update_model_attributes(model, ai_model_dto, base_model, model_file, deploy_file)
         await self.db.flush()
         return model
     
-    async def _update_model_attributes(self, model: AiModel, model_info: ModelInfo, base_model: AiModel, model_file: Optional[FileMeta] = None, deploy_file: Optional[FileMeta] = None):
-        model.version = model_info.version or model.version
-        model.map50 = model_info.map50 or model.map50
-        model.map50_95 = model_info.map50_95 or model.map50_95
-        model.precision = model_info.precision or model.precision
-        model.recall = model_info.recall or model.recall
-        model.classes = ','.join(model_info.classes) if model_info.classes else model.classes
+    async def _update_model_attributes(self, model: AiModel, ai_model_dto: AiModelDTO, base_model: AiModel = None, model_file: Optional[FileMeta] = None, deploy_file: Optional[FileMeta] = None):
+        model.version = ai_model_dto.version or model.version
+        model.map50 = ai_model_dto.map50 or model.map50
+        model.map50_95 = ai_model_dto.map50_95 or model.map50_95
+        model.precision = ai_model_dto.precision or model.precision
+        model.recall = ai_model_dto.recall or model.recall
+        model.classes = ','.join(ai_model_dto.classes) if ai_model_dto.classes else model.classes
         model.base_model = base_model
         model.model_file = model_file or model.model_file
         model.deploy_file = deploy_file or model.deploy_file

@@ -14,11 +14,11 @@ class MlService:
         self.repository = MlRepository(db=session)
 
     @transactional
-    async def init_model(self, model_name: str) -> int:
+    async def init_model(self, model_name: str, base_model_name: str) -> int:
         model = await self.get_model_by_name(model_name)
         version = 1 if model is None else model['version'] + 1
         await self.register_model(AiModelDTO(
-            model_name=model_name, version=version
+            model_name=model_name, version=version, base_model_name=base_model_name
         ))
 
         return version
@@ -71,8 +71,8 @@ class MlService:
         return await self.repository.delete_model(model_name)
 
     @transactional
-    async def deploy_model(self, model_name: str) -> str:
-        model = await self.repository.deploy_model(model_name)
+    async def deploy_model(self, model_name: str, deploy_path: str) -> str:
+        model = await self.repository.deploy_model(model_name, deploy_path)
         return model.modelname
     
     @transactional

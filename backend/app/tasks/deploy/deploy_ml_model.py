@@ -7,13 +7,19 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 
 # Triton 서버에 모델 배포
-def deploy_to_triton(model_name: str, model_type: str, version: int, onnx_model_path: str, triton_model_repo: str, triton_server_url: str):
+def deploy_to_triton(model_name: str, version: int, model_path: str, triton_model_repo: str, triton_server_url: str):
     try:
+        from ultralytics import YOLO
+
         triton_model_path = os.path.join(triton_model_repo, model_name)
         version_path = os.path.join(triton_model_path, str(version))
-        dest_path = os.path.join(version_path, f"model.{model_type}") 
+        dest_path = os.path.join(version_path, f"model.onnx") 
 
         os.makedirs(version_path, exist_ok=True)
+
+        ## export 로직 필요. onnx로 변환
+        model = YOLO(model_path)
+        onnx_model_path = model.export(format="onnx", dynamic=True, simplify=True)
 
         shutil.copy(onnx_model_path, dest_path)
         output_dims = extract_output_dims(onnx_model_path)
@@ -25,14 +31,14 @@ def deploy_to_triton(model_name: str, model_type: str, version: int, onnx_model_
         # Triton 서버에 모델 로드 요청
         if load_model_to_triton(triton_server_url, model_name):
             logging.info(f"Model {model_name} successfully loaded to Triton server.")
-            return True
+            return True, dest_path
         else:
             logging.error(f"Failed to load model {model_name} to Triton server.")
-            return False
+            return False, None
 
     except Exception as e:
         logging.error(f"Error deploying model to Triton: {e}")
-        return False
+        return False, None
 
 
 # Triton 서버용 config.pbtxt 파일 생성

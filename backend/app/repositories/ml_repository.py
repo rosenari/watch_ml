@@ -122,12 +122,14 @@ class MlRepository:
         await self.db.flush()
 
     # 모델을 배포 상태로 변경
-    async def deploy_model(self, model_name: str) -> AiModel:
+    async def deploy_model(self, model_name: str, deploy_path: str) -> AiModel:
         result = await self.db.execute(select(AiModel).filter(AiModel.modelname == model_name))
         model = result.scalars().first()
 
         if model:
+            deploy_file = await self.file_repo.register_file(deploy_path)
             model.is_deploy = True
+            model.deploy_file = deploy_file
             await self.db.flush()
         return model
     
@@ -138,6 +140,7 @@ class MlRepository:
 
         if model:
             model.is_deploy = False
+            model.deploy_file = None
             await self.db.flush()
         return model
 

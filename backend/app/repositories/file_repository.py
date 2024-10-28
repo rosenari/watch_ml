@@ -32,7 +32,7 @@ class FileRepository:
         return file_meta
 
     async def register_file(self, file_path: str) -> FileMeta:
-        file_size = os.path.getsize(file_path)
+        file_size = os.path.getsize(file_path) if os.path.exists(file_path) else 0
         file_meta = await self._get_existing_file_meta(file_path)
 
         if file_meta:

@@ -3,10 +3,12 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.exc import NoResultFound
+from app.database import get_session
 from app.entity import AiModel, Status, FileMeta
 from app.repositories.file_repository import FileRepository
 from app.dto import AiModelDTO
 from typing import Optional
+from app.config import YOLO_CLASS_LIST, MODEL_DIRECTORY, FASHION_MODEL_CLASS_LIST
 
 
 class MlRepository:
@@ -154,3 +156,39 @@ class MlRepository:
         
         model.status = new_status
         await self.db.flush()
+
+
+async def create_base_model():
+    async for session_instance in get_session():
+        try:
+            ml_repo = MlRepository(session_instance)
+            base_model_list = [
+                {
+                    "model_name": "yolov10s",
+                    "model_path": "yolov10s.pt",
+                    "classes": YOLO_CLASS_LIST,
+                },
+                {
+                    "model_name": "yolov10n",
+                    "model_path": "yolov10n.pt",
+                    "classes": YOLO_CLASS_LIST,
+                },
+                {
+                    "model_name": "fashion_model",
+                    "model_path": f"{MODEL_DIRECTORY}/fashion_model/1/best.pt",
+                    "classes": FASHION_MODEL_CLASS_LIST
+                }
+            ]
+            for base_model in base_model_list:
+                await ml_repo.register_model(AiModelDTO(
+                    model_name=base_model['model_name'],
+                    version=1,
+                    model_path=base_model['model_path'],
+                    classes=base_model['classes']
+                ))
+            await session_instance.commit()
+        except Exception as e:
+            await session_instance.rollback()
+            raise e  
+        finally:
+            await session_instance.close()

@@ -10,6 +10,7 @@ services:
       - './backend/app:/src/app'
       - './backend/dataset_archive:/src/dataset_archive'
       - './backend/main.py:/src/main.py'
+      - './backend/mlruns:/src/runs'
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - PYTHONUNBUFFERED=1

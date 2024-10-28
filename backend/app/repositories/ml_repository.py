@@ -1,4 +1,4 @@
-from sqlalchemy import desc, and_, nullsfirst
+from sqlalchemy import desc, and_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select

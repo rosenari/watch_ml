@@ -4,8 +4,7 @@ from sqlalchemy import desc
 from sqlalchemy.orm import contains_eager
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from app.config import DATASET_DIRECTORY
-from app.entity import DataSet, Status, FileMeta
+from app.entity import DataSet, Status
 from app.repositories.file_repository import FileRepository
 import os
 

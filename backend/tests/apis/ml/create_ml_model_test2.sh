@@ -4,6 +4,6 @@ curl -X POST "http://localhost:5000/ml/create" \
 -H "Content-Type: application/json" \
 -d '{
     "m_name": "hello_model",
-    "m_type": "onnx",
+    "b_m_name": "yolov10n"
     "zip_files": ["night.zip", "sunset.zip"]
 }'

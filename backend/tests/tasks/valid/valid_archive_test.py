@@ -26,7 +26,7 @@ def mock_zip_file(tmpdir):
     with zipfile.ZipFile(zip_buffer, 'w') as mock_zip:
         yaml_content = f"""
         train: 'train_images'
-        val: 'train_images'  # 여기서 val/test도 train처럼 가정
+        val: 'train_images'
         test: 'train_images'
         names: ['class1', 'class2']
         """

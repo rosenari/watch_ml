@@ -24,6 +24,7 @@ class DatasetRepository:
         if dataset:
             dataset.is_delete = False
             dataset.file_meta = file_meta
+            dataset.status = Status.READY
         else:
             dataset = DataSet(
                 filename=file_name,

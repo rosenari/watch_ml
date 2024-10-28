@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from app.apis import dataset_api, ml_api
 from app.entity import create_tables
+from app.repositories.ml_repository import create_base_model
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
@@ -9,6 +10,7 @@ from contextlib import asynccontextmanager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await create_tables()
+    await create_base_model()
     yield
 
 

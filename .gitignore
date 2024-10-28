@@ -10,6 +10,7 @@ __pycache__/
 merged_output/
 db/
 
+
 ## dashboard ignore files
 # dependencies
 node_modules/

@@ -118,7 +118,7 @@ async def create_model(ml_service: MlService, model_name: str, model_ext: str, v
             return False
 
         ai_model = await ml_service.get_model_by_name(model_name=model_name)
-        base_model_path = ai_model['base_model']['model_file']['file_path']
+        base_model_path = ai_model['base_model']['model_file']['filepath']
         create_result, model_info = create_yolo_model(  # Yolo 학습 및 모델 생성
             model_name=model_name,
             model_ext=model_ext,
@@ -155,7 +155,7 @@ async def deploy_model(ml_service: MlService, model_name: str):
         await ml_service.session.commit()  # 중간 상태 커밋
 
         model = await ml_service.get_model_by_name(model_name)
-        model_path = model['model_file']['file_path']
+        model_path = model['model_file']['filepath']
         version = model['version']
 
         deploy_result, deploy_path = deploy_to_triton(model_name, version, model_path, MODEL_REPOSITORY, TRITON_GRPC_URL)

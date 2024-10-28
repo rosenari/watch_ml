@@ -14,8 +14,8 @@ class MlService:
         self.repository = MlRepository(db=session)
 
     @transactional
-    async def init_model(self, model_name: str, base_model_name: str) -> int:
-        model = await self.get_model_by_name(model_name)
+    async def init_model(self, model_name: str, base_model_name: str = None) -> int:
+        model = await self.repository.get_model_by_name(model_name)
         version = 1 if model is None else model['version'] + 1
         await self.register_model(AiModelDTO(
             model_name=model_name, version=version, base_model_name=base_model_name

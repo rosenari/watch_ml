@@ -1,4 +1,4 @@
-from sqlalchemy import desc, and_
+from sqlalchemy import desc, and_, nullslast
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -57,11 +57,14 @@ class MlRepository:
         model.recall = ai_model_dto.recall or model.recall
         model.classes = ','.join(ai_model_dto.classes) if ai_model_dto.classes else model.classes
         model.base_model = base_model
-        model.model_file = model_file or model.model_file
-        model.deploy_file = deploy_file or model.deploy_file
         model.is_deploy = False
         model.is_delete = False
         model.status = Status.PENDING
+
+        if model_file is not None:
+            model.model_file = model_file
+        if deploy_file is not None:
+            model.deploy_file = deploy_file
 
     # 모델 정보 가져오기
     async def get_model_by_name(self, model_name: str) -> AiModel:
@@ -77,10 +80,11 @@ class MlRepository:
         try:
             result = await self.db.execute(
                 select(AiModel)
+                .outerjoin(FileMeta, AiModel.model_file_id == FileMeta.id)
                 .options(
                     selectinload(AiModel.model_file),
                     selectinload(AiModel.deploy_file),
-                    selectinload(AiModel.base_model),
+                    selectinload(AiModel.base_model).selectinload(AiModel.model_file),
                 )
                 .filter(and_(AiModel.is_delete == False, AiModel.modelname == model_name))
             )
@@ -100,13 +104,14 @@ class MlRepository:
     async def get_all_models_with_filemeta(self) -> list[AiModel]:
         result = await self.db.execute(
         select(AiModel)
+        .outerjoin(FileMeta, AiModel.model_file_id == FileMeta.id)
         .options(
             selectinload(AiModel.model_file),
             selectinload(AiModel.deploy_file),
-            selectinload(AiModel.base_model)
+            selectinload(AiModel.base_model).selectinload(AiModel.model_file)
         )
         .filter(AiModel.is_delete == False)
-        .order_by(desc(FileMeta.creation_time))
+        .order_by(nullslast(desc(FileMeta.creation_time)), AiModel.modelname)
         )
         models = result.scalars().all()
 

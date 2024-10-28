@@ -90,7 +90,7 @@ class AiModel(Base):
     def serialize(self) -> dict:
         return {
             "id": self.id,
-            "modelname": self.modelname,
+            "model_name": self.modelname,
             "version": self.version,
             "map50": self.map50,
             "map50_95": self.map50_95,
@@ -100,9 +100,14 @@ class AiModel(Base):
             "status": self.status.value,
             "is_delete": self.is_delete,
             "is_deploy": self.is_deploy,
-            "base_model": self.base_model.serialize() if self.base_model else None,
-            "model_file": self.model_file.serialize() if self.model_file else None,
-            "deploy_file": self.deploy_file.serialize() if self.deploy_file else None,
+            "base_model": {
+                "model_name": self.base_model.modelname,
+                "model_file": {
+                    "filepath": self.base_model.model_file.filepath
+                }
+            } if self.base_model is not None else None,
+            "model_file": self.model_file.serialize() if self.model_file is not None else None,
+            "deploy_file": self.deploy_file.serialize() if self.deploy_file is not None else None,
         }
 
 

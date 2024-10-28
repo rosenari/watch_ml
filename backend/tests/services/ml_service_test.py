@@ -2,7 +2,7 @@ import os
 import pytest
 import pytest_asyncio
 from app.database import get_redis
-from app.services.ml_service import MlService
+from app.services.ml_service import MlService, AiModelDTO
 from app.database import get_session, async_engine
 import tempfile
 
@@ -35,34 +35,54 @@ def temp_directory():
 
 
 @pytest.fixture
-def temp_file(temp_directory):
-    temp_file_path = os.path.join(temp_directory, "temp_test_model.onnx")
-    with open(temp_file_path, "wb") as tmp_file:
-        tmp_file.write(b"dummy model content")
-    yield temp_file_path
+def temp_model(temp_directory):
+    model_name = 'temp_model'
+    temp_model_path = os.path.join(temp_directory, f"{model_name}.pt")
+    with open(temp_model_path, "wb") as tmp_model:
+        tmp_model.write(b"dummy model content")
+    yield temp_model_path, model_name
 
 
 @pytest.fixture
-def ml_service(redis, session, temp_directory) -> MlService:
-    service = MlService(redis, session, file_directory=temp_directory)
+def ml_service(redis, session) -> MlService:
+    service = MlService(redis, session)
     return service
 
 
 @pytest.mark.asyncio
-async def test_register_model(ml_service: MlService):
-    file_name = 'temp_register_model.onnx'
+async def test_init_model(ml_service: MlService):
+    model_name = 'temp_init_model'
+    base_model_name = 'yolov10s'  # 앱 실행 시 자동등록되는 모델
 
-    await ml_service.register_model(file_name)
-
-    model_list = await ml_service.get_model_list()
-    model_names = [model['file_name'] for model in model_list]
-
-    assert file_name in model_names, f"Model {file_name} was not registered."
+    await ml_service.init_model(model_name=model_name, base_model_name=base_model_name)
+    model = await ml_service.get_model_by_name(model_name=model_name)
+    
+    assert model_name == model['model_name'], f"Model {model_name} was not registered."
+    assert model['base_model']['model_name'] == 'yolov10s', f"Base Model {base_model_name} was not registered."
+    assert model['base_model']['model_file']['filepath'] == f"{base_model_name}.pt", f"Base Model Path {base_model_name}.pt was not registered."
 
 
 @pytest.mark.asyncio
-async def test_get_model_by_name(ml_service: MlService, temp_file: str):
-    file_name = os.path.basename(temp_file)
+async def test_register_model(ml_service: MlService, temp_model: str):
+    model_path, model_name = temp_model
+    classes = ['bus', 'truck']
+
+    await ml_service.register_model(AiModelDTO(
+        model_name=model_name,
+        model_path=model_path,
+        classes=classes
+    ))
+
+    model = await ml_service.get_model_by_name(model_name=model_name)
+
+    assert model_name == model['model_name'], f"Model {model_name} was not registered."
+    assert model['base_model'] == None, f"Base Model was registered."
+    assert model['model_file']['filepath'] == model_path, f"Model Path {model_path} was not registered."
+
+
+@pytest.mark.asyncio
+async def test_get_model_by_name(ml_service: MlService, temp_model: str):
+    model_path, model_name = temp_model
     version = 1
     map50 = 0.75
     map50_95 = 0.65
@@ -70,13 +90,22 @@ async def test_get_model_by_name(ml_service: MlService, temp_file: str):
     recall = 0.9
     classes = ['car']
 
-    await ml_service.register_model(file_name, version, temp_file, map50, map50_95, precision, recall, classes)
-    model = await ml_service.get_model_by_name(file_name)
+    await ml_service.register_model(AiModelDTO(
+        model_name=model_name,
+        model_path=model_path,
+        version=version,
+        map50=map50,
+        map50_95=map50_95,
+        precision=precision,
+        recall=recall,
+        classes=classes
+    ))
+    model = await ml_service.get_model_by_name(model_name)
 
-    assert model is not None, f"Model {file_name} was not found."
-    assert model["file_name"] == file_name, f"Expected {file_name}, got {model['file_name']}."
+    assert model is not None, f"Model {model_name} was not found."
+    assert model["model_name"] == model_name, f"Expected {model_name}, got {model['model_name']}."
     assert model["version"] == version, f"Expected {version}, got {model['version']}."
-    assert model["file_path"] == temp_file, f"Expected {temp_file}, got {model['file_path']}."
+    assert model["model_file"]["filepath"] == model_path, f"Expected {model_path}, got {model['model_file']['filepath']}."
     assert model["map50"] == map50, f"Expected {map50}, got {model['map50']}."
     assert model["map50_95"] == map50_95, f"Expected {map50_95}, got {model['map50_95']}."
     assert model["precision"] == precision, f"Expected {precision}, got {model['precision']}."
@@ -86,26 +115,38 @@ async def test_get_model_by_name(ml_service: MlService, temp_file: str):
 
 
 @pytest.mark.asyncio
-async def test_update_model(ml_service: MlService, temp_file: str):
-    file_name = os.path.basename(temp_file)
+async def test_update_model(ml_service: MlService, temp_model: str):
+    model_path, model_name = temp_model
     version = 1
     map50 = 0.75
     map50_95 = 0.65
     precision = 0.8
     recall = 0.9
 
-    await ml_service.register_model(file_name, version, temp_file, map50, map50_95, precision, recall)
+    await ml_service.register_model(AiModelDTO(
+        model_name=model_name,
+        version=version,
+        model_path=model_path,
+        map50=map50,
+        map50_95=map50_95,
+        precision=precision,
+        recall=recall
+    ))
 
     new_version = 2
     classes = ['car']
 
-    await ml_service.update_model(file_name, version=new_version, classes=['car'])
-    model = await ml_service.get_model_by_name(file_name)
+    await ml_service.update_model(AiModelDTO(
+        model_name=model_name,
+        version=new_version,
+        classes=classes
+    ))
+    model = await ml_service.get_model_by_name(model_name)
 
-    assert model is not None, f"Model {file_name} was not found."
-    assert model["file_name"] == file_name, f"Expected {file_name}, got {model['file_name']}."
+    assert model is not None, f"Model {model_name} was not found."
+    assert model["model_name"] == model_name, f"Expected {model_name}, got {model['model_name']}."
     assert model["version"] == new_version, f"Expected {new_version}, got {model['version']}."
-    assert model["file_path"] == temp_file, f"Expected {temp_file}, got {model['file_path']}."
+    assert model["model_file"]["filepath"] == model_path, f"Expected {model_path}, got {model['model_file']['filepath']}."
     assert model["map50"] == map50, f"Expected {map50}, got {model['map50']}."
     assert model["map50_95"] == map50_95, f"Expected {map50_95}, got {model['map50_95']}."
     assert model["precision"] == precision, f"Expected {precision}, got {model['precision']}."
@@ -114,72 +155,85 @@ async def test_update_model(ml_service: MlService, temp_file: str):
     assert model["status"] == "pending", f"Expected status 'ready', got {model['status']}."  # model 등록시 최초 pending 상태로 초기화됨.
 
 
-
 @pytest.mark.asyncio
-async def test_delete_model(ml_service: MlService, temp_file: str):
-    file_name = os.path.basename(temp_file)
+async def test_delete_model(ml_service: MlService, temp_model: str):
+    model_path, model_name = temp_model
     version = 1
     map50 = 0.75
     map50_95 = 0.65
     precision = 0.8
     recall = 0.9
 
-    await ml_service.register_model(file_name, version, temp_file, map50, map50_95, precision, recall)
-    await ml_service.delete_model(file_name)
+    await ml_service.register_model(AiModelDTO(
+        model_name=model_name,
+        version=version,
+        model_path=model_path,
+        map50=map50,
+        map50_95=map50_95,
+        precision=precision,
+        recall=recall
+    ))
+    await ml_service.delete_model(model_name)
 
     model_list = await ml_service.get_model_list()
-    model_names = [model['file_name'] for model in model_list]
+    model_names = [model['model_name'] for model in model_list]
 
-    assert file_name not in model_names, f"Model {file_name} was not deleted."
+    assert model_name not in model_names, f"Model {model_name} was not deleted."
 
 
 @pytest.mark.asyncio
-async def test_get_model_list(ml_service: MlService, temp_directory):
+async def test_get_model_list(ml_service: MlService, temp_directory): # 여기부터 ~
     model_files = [
-        ("model1.onnx", 0.7, 0.6, 0.8, 0.9),
-        ("model2.onnx", 0.8, 0.7, 0.85, 0.95),
-        ("model3.onnx", 0.75, 0.65, 0.82, 0.92)
+        ("model1", 0.7, 0.6, 0.8, 0.9),
+        ("model2", 0.8, 0.7, 0.85, 0.95),
+        ("model3", 0.75, 0.65, 0.82, 0.92)
     ]
 
-    for file_name, map50, map50_95, precision, recall in model_files:
-        temp_file_path = os.path.join(temp_directory, file_name)
-        with open(temp_file_path, "wb") as f:
+    for model_name, map50, map50_95, precision, recall in model_files:
+        model_file_path = os.path.join(temp_directory, f"{model_name}.pt")
+        with open(model_file_path, "wb") as f:
             f.write(b"dummy model content")
         
-        await ml_service.register_model(file_name, 1, temp_file_path, map50, map50_95, precision, recall)
+        await ml_service.register_model(AiModelDTO(
+            model_name=model_name,
+            map50=map50,
+            map50_95=map50_95,
+            precision=precision,
+            recall=recall
+        ))
 
     model_list = await ml_service.get_model_list()
-    model_names = [model['file_name'] for model in model_list]
+    model_names = [model['model_name'] for model in model_list]
 
-    for file_name, *_ in model_files:
-        assert file_name in model_names, f"{file_name} is not listed."
+    for model_name, *_ in model_files:
+        assert model_name in model_names, f"{model_name} is not listed."
 
 
 @pytest.mark.asyncio
 async def test_get_model_classes(ml_service: MlService):
-    file_name = 'test_model.onnx'
+    model_name = 'test_model'
     classes = ['truck', 'bus']
-    await ml_service.register_model(file_name=file_name, classes=classes)
+    await ml_service.register_model(AiModelDTO(
+        model_name=model_name,
+        classes=classes
+    ))
 
-    model_classes = await ml_service.get_model_classes(file_name)
+    model_classes = await ml_service.get_model_classes(model_name)
 
     assert classes == model_classes, f"Model classes was not registered to {classes}."
 
 
 @pytest.mark.asyncio
-async def test_update_status(ml_service: MlService, temp_file: str):
-    file_name = os.path.basename(temp_file)
-    version = 1
-    map50 = 0.75
-    map50_95 = 0.65
-    precision = 0.8
-    recall = 0.9
+async def test_update_status(ml_service: MlService):
+    model_name = 'temp_model'
 
-    await ml_service.register_model(file_name, version, temp_file, map50, map50_95, precision, recall)
-    await ml_service.update_status(file_name, "running")
+    await ml_service.register_model(AiModelDTO(
+        model_name=model_name
+    ))
+    await ml_service.update_status(model_name, "running")
 
     model_list = await ml_service.get_model_status()
-    updated_model_status = next((model for model in model_list if model['file_name'] == file_name), None)
+    updated_model = next((model for model in model_list if model['model_name'] == model_name), None)
 
-    assert updated_model_status is not None, "Updated model is not found in the list."
-    assert updated_model_status["status"] == "running", "Model status was not updated to 'running'."
+    assert updated_model is not None, "Updated model is not found in the list."
+    assert updated_model["status"] == "running", "Model status was not updated to 'running'."

@@ -1,4 +1,4 @@
-from sqlalchemy import desc, and_, nullslast
+from sqlalchemy import desc, and_, nullsfirst
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -80,7 +80,6 @@ class MlRepository:
         try:
             result = await self.db.execute(
                 select(AiModel)
-                .outerjoin(FileMeta, AiModel.model_file_id == FileMeta.id)
                 .options(
                     selectinload(AiModel.model_file),
                     selectinload(AiModel.deploy_file),
@@ -104,14 +103,13 @@ class MlRepository:
     async def get_all_models_with_filemeta(self) -> list[AiModel]:
         result = await self.db.execute(
         select(AiModel)
-        .outerjoin(FileMeta, AiModel.model_file_id == FileMeta.id)
         .options(
             selectinload(AiModel.model_file),
             selectinload(AiModel.deploy_file),
             selectinload(AiModel.base_model).selectinload(AiModel.model_file)
         )
         .filter(AiModel.is_delete == False)
-        .order_by(nullslast(desc(FileMeta.creation_time)), AiModel.modelname)
+        .order_by(desc(AiModel.id))
         )
         models = result.scalars().all()
 

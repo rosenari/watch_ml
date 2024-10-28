@@ -52,14 +52,18 @@ class DatasetRepository:
             .join(DataSet.file_meta) 
             .options(contains_eager(DataSet.file_meta))
             .filter(DataSet.is_delete == False)
-            .order_by(desc(FileMeta.creation_time))
+            .order_by(desc(DataSet.id))
         )
         files = result.scalars().all()
 
         return files
     
     async def list_files(self) -> List[DataSet]:
-        result = await self.db.execute(select(DataSet).filter(DataSet.is_delete == False))
+        result = await self.db.execute(
+            select(DataSet)
+            .filter(DataSet.is_delete == False)
+            .order_by(desc(DataSet.id))
+        )
         files = result.scalars().all()
 
         return files

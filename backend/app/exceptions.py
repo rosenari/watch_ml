@@ -5,3 +5,7 @@ class NotFoundException(Exception):
 class ForbiddenException(Exception):
     def __init__(self, message="접근이 금지되었습니다."):
         self.message = message
+
+class BadRequestException(Exception):
+    def __init__(self, message="잘못된 요청 입니다."):
+        self.message = message

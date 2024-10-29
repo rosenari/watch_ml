@@ -39,3 +39,6 @@ YOLO_CLASS_LIST = ["person", "bicycle", "car", "motorcycle", "airplane",
 "clock", "vase", "scissors", "teddy bear", "hair dryer",
 "toothbrush"]
 FASHION_MODEL_CLASS_LIST =  ["short_sleeved_shirt","long_sleeved_shirt","short_sleeved_outwear","long_sleeved_outwear","vest","sling","shorts","trousers","skirt","short_sleeved_dress","long_sleeved_dress","vest_dress","sling_dress"]
+
+PHOTO_EXTENSIONS = {'jpg', 'jpeg', 'png'}
+VIDEO_EXTENSIONS = {'mov', 'mp4', 'avi', 'mkv'}

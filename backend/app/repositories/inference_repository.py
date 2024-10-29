@@ -7,6 +7,7 @@ from sqlalchemy.future import select
 from app.entity import InferenceFile, Status, FileType
 from app.repositories.file_repository import FileRepository
 from app.exceptions import NotFoundException
+from app.config import PHOTO_EXTENSIONS, VIDEO_EXTENSIONS
 import os
 
 
@@ -124,10 +125,10 @@ class InferenceRepository:
 
 
 def get_file_type(file_name: str) -> Union[FileType, None]:
-    photo_extensions = {'jpg', 'jpeg', 'png'}
-    video_extensions = {'mov', 'mp4', 'avi', 'mkv'}
+    photo_extensions = PHOTO_EXTENSIONS
+    video_extensions = VIDEO_EXTENSIONS
 
-    extension = os.path.splitext(file_name)[1][1:].lower()
+    extension = file_name.rsplit(".")[-1].lower()
 
     if extension in photo_extensions:
         return FileType.PHOTO

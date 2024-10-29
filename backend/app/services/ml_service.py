@@ -25,6 +25,11 @@ class MlService:
 
     @transactional
     async def register_model(self, ai_model_dto: AiModelDTO) -> str:
+        if ai_model_dto.base_model_name is not None:
+            base_model = await self.repository.get_model_by_name(ai_model_dto.base_model_name)
+            if base_model.status != Status.COMPLETE:
+                raise ValueError(f"Base model '{ai_model_dto.base_model_name}' is not complete and cannot be used.")
+        
         new_model = await self.repository.register_model(ai_model_dto)
         return new_model.modelname
     

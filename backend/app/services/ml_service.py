@@ -5,6 +5,7 @@ from app.repositories.ml_repository import MlRepository
 from app.dto import AiModelDTO
 from app.util import transactional
 from app.entity import Status
+from app.exceptions import ForbiddenException
 
 
 class MlService:
@@ -28,7 +29,7 @@ class MlService:
         if ai_model_dto.base_model_name is not None:
             base_model = await self.repository.get_model_by_name(ai_model_dto.base_model_name)
             if base_model.status != Status.COMPLETE:
-                raise ValueError(f"Base model '{ai_model_dto.base_model_name}' is not complete and cannot be used.")
+                raise ForbiddenException(f"Base model '{ai_model_dto.base_model_name}' is not complete and cannot be used.")
         
         new_model = await self.repository.register_model(ai_model_dto)
         return new_model.modelname
@@ -87,10 +88,7 @@ class MlService:
     
     @transactional
     async def update_status(self, model_name: str, status: str):
-        try:
-            new_status = Status[status.upper()]
-        except KeyError:
-            raise ValueError(f"Invalid status: {status}")
+        new_status = Status[status.upper()]
 
         return await self.repository.update_status(model_name, new_status)
         

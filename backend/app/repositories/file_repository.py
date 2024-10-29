@@ -4,6 +4,7 @@ import aiofiles
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.entity import FileMeta
+from app.exceptions import NotFoundException
 
 
 
@@ -52,7 +53,7 @@ class FileRepository:
         file_meta = result.scalars().first()
 
         if not file_meta:
-            raise FileNotFoundError(f"File {file_path} not found in database.")
+            raise NotFoundException(f"File {file_path} not found in database.")
 
         return file_meta
     

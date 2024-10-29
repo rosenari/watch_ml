@@ -54,10 +54,7 @@ class DataSetService:
     
     @transactional
     async def update_status(self, file_name: str, status: str):
-        try:
-            new_status = Status[status.upper()]
-        except KeyError:
-            raise ValueError(f"Invalid status: {status}")
+        new_status = Status[status.upper()]
 
         return await self.repository.update_status(file_name, new_status)
     

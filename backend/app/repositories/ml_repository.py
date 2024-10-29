@@ -7,6 +7,7 @@ from app.database import get_session
 from app.entity import AiModel, Status, FileMeta
 from app.repositories.file_repository import FileRepository
 from app.dto import AiModelDTO
+from app.exceptions import NotFoundException
 from typing import Optional
 from app.config import YOLO_CLASS_LIST, MODEL_DIRECTORY, FASHION_MODEL_CLASS_LIST
 
@@ -37,7 +38,7 @@ class MlRepository:
     async def update_model(self, ai_model_dto: AiModelDTO) -> AiModel:
         model = await self.get_model_by_name(ai_model_dto.model_name)
         if model is None:
-            raise FileNotFoundError(f"Model {ai_model_dto.model_name} not found in database.")
+            raise NotFoundException(f"Model {ai_model_dto.model_name} not found in database.")
 
         model.is_delete = False
         model.is_deploy = False
@@ -122,7 +123,7 @@ class MlRepository:
         model = result.scalars().first()
         
         if not model:
-            raise FileNotFoundError(f"Model {model_name} not found in database.")
+            raise NotFoundException(f"Model {model_name} not found in database.")
         
         model.is_delete = True
         await self.db.flush()
@@ -156,7 +157,7 @@ class MlRepository:
         model = result.scalars().first()
 
         if not model:
-            raise ValueError(f"Model {model_name} not found in database.")
+            raise NotFoundException(f"Model {model_name} not found in database.")
         
         model.status = new_status
         await self.db.flush()

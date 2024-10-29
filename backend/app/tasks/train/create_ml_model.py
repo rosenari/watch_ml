@@ -2,20 +2,19 @@ import os
 import logging
 import traceback
 import shutil
+from app.config import CELERY_ML_RUNS_PATH, MODEL_DIRECTORY, ML_REPO, TRITON_REPO
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-def create_yolo_model(model_name: str, model_ext: str, base_model_path: str, version: int, output_dir: str, ml_runs_path: str, status_handler=lambda ri_key, status: None):
+def create_yolo_model(model_name: str, model_ext: str, base_model_path: str, version: int, output_dir: str, status_handler=lambda ri_key, status: None):
     logging.info("start create_yolo_model")
     # celery와 fastapi 의존성 분리로 인해 함수내에서 패키지 로딩 (yolo 패키지는 celery에만 존재)
     from ultralytics import YOLO
     import torch
 
     file_name = f"{model_name}.{model_ext}"
-    ML_REPO = 'model_repo'
-    TRITON_REPO = 'triton_repo'
     epochs = 1
     img_size = 640
 
@@ -58,7 +57,7 @@ def create_yolo_model(model_name: str, model_ext: str, base_model_path: str, ver
         logging.info(f"best model path: {best_model_path}")
 
         # best 모델을 레포로 복사
-        dest_path = os.path.join(ml_runs_path, ML_REPO, model_name, str(version))
+        dest_path = os.path.join(MODEL_DIRECTORY, model_name, str(version))
         if not os.path.exists(dest_path):
             os.makedirs(dest_path, exist_ok=True)
         
@@ -87,7 +86,7 @@ def create_yolo_model(model_name: str, model_ext: str, base_model_path: str, ver
         del model 
         logging.info("Deleted YOLO model object to release memory.")
         
-        clear_directory_except(ml_runs_path ,[ML_REPO, TRITON_REPO])  # 찌꺼기 제거
+        clear_directory_except(CELERY_ML_RUNS_PATH ,[ML_REPO, TRITON_REPO])  # 찌꺼기 제거
         logging.info("Temporary directories cleaned up.")
     
 

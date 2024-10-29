@@ -30,14 +30,7 @@ class DataSetService:
         result = []
         datasets = await self.repository.list_files_with_filemeta()
         for dataset in datasets:
-            formatted_size = format_file_size(dataset.file_meta.filesize)
-
-            result.append({
-                "file_name": dataset.filename,
-                "creation_date": dataset.file_meta.creation_time.strftime('%Y-%m-%d %H:%M:%S'),
-                "file_size": formatted_size,
-                "status": dataset.status.value
-            })
+            result.append(dataset.serialize())
         return result
     
     async def get_file_status(self) -> List[dict]:

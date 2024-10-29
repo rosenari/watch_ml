@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from app.database import Base, async_engine
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, Enum
 from sqlalchemy.sql import func
+from app.util import format_file_size
 import enum
 
 
@@ -37,7 +38,7 @@ class FileMeta(Base):
         return {
             "id": self.id,
             "filepath": self.filepath,
-            "filesize": self.filesize,
+            "filesize": format_file_size(self.filesize),
             "creation_time": self.creation_time.strftime('%Y-%m-%d %H:%M:%S') if self.creation_time else None,
         }
 
@@ -56,7 +57,7 @@ class DataSet(Base):
     def serialize(self) -> dict:
         return {
             "id": self.id,
-            "filename": self.filename,
+            "file_name": self.filename,
             "status": self.status.value,
             "is_delete": self.is_delete,
             "file_meta": self.file_meta.serialize() if self.file_meta else None,

@@ -1,9 +1,12 @@
 import os
 
 
+ML_REPO = 'model_repo'
+TRITON_REPO = 'triton_repo'
 DATASET_DIRECTORY = os.environ.get('DATASET_DIRECTORY', '/src/dataset_archive')
-MODEL_DIRECTORY = os.environ.get('MODEL_DIRECTORY', '/src/runs/model_repo')
-MODEL_REPOSITORY = os.environ.get('MODEL_REPOSITORY', '/src/runs/triton_repo') # triton repo
+INFERENCE_DIRECTORY = os.environ.get('INFERENCE_DIRECTORY', '/src/inference_files')
+MODEL_DIRECTORY = os.environ.get('MODEL_DIRECTORY', f"/src/runs/{ML_REPO}")
+MODEL_REPOSITORY = os.environ.get('MODEL_REPOSITORY', f"/src/runs/{TRITON_REPO}") # triton repo
 
 VALID_ARCHIVE_MODULE_PATH = os.getenv('VALID_ARCHIVE_MODULE_PATH', 'app.tasks.valid_archive')
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')

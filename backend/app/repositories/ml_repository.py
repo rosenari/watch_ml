@@ -56,11 +56,12 @@ class MlRepository:
         model.precision = ai_model_dto.precision or model.precision
         model.recall = ai_model_dto.recall or model.recall
         model.classes = ','.join(ai_model_dto.classes) if ai_model_dto.classes else model.classes
-        model.base_model = base_model
         model.is_deploy = False
         model.is_delete = False
         model.status = Status.PENDING
 
+        if base_model is not None:
+            model.base_model = base_model
         if model_file is not None:
             model.model_file = model_file
         if deploy_file is not None:

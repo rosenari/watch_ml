@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from app.services.ml_service import get_ml_service, MlService
 from app.apis.models import ModelCreateRequest, ModelDeployRequest
 from app.tasks.main import create_model_task, deploy_model_task, undeploy_model_task
+import traceback
 
 
 router = APIRouter()

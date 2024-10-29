@@ -16,7 +16,7 @@ def create_yolo_model(model_name: str, model_ext: str, base_model_path: str, ver
     file_name = f"{model_name}.{model_ext}"
     ML_REPO = 'model_repo'
     TRITON_REPO = 'triton_repo'
-    epochs = 100
+    epochs = 1
     img_size = 640
 
     # data.yaml 파일 경로 설정
@@ -54,7 +54,7 @@ def create_yolo_model(model_name: str, model_ext: str, base_model_path: str, ver
         precision = metrics.box.mp
         recall = metrics.box.mr
 
-        best_model_path = model.best
+        best_model_path = model.trainer.best
         logging.info(f"best model path: {best_model_path}")
 
         # best 모델을 레포로 복사

@@ -3,6 +3,7 @@ import pytest
 import pytest_asyncio
 from app.database import get_redis
 from app.services.ml_service import MlService, AiModelDTO
+from app.exceptions import ForbiddenException
 from app.database import get_session, async_engine
 import tempfile
 
@@ -89,7 +90,7 @@ async def test_register_model_error(ml_service: MlService, temp_model: str):
         model_name='base_model',
     ))
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ForbiddenException):
         await ml_service.register_model(AiModelDTO(
             model_name=model_name,
             model_path=model_path,

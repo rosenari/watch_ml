@@ -81,6 +81,28 @@ async def test_register_model(ml_service: MlService, temp_model: str):
 
 
 @pytest.mark.asyncio
+async def test_register_model_error(ml_service: MlService, temp_model: str):
+    model_path, model_name = temp_model
+    classes = ['bus', 'truck']
+
+    await ml_service.register_model(AiModelDTO(
+        model_name='base_model',
+    ))
+
+    with pytest.raises(ValueError):
+        await ml_service.register_model(AiModelDTO(
+            model_name=model_name,
+            model_path=model_path,
+            base_model_name='base_model',
+            classes=classes
+        ))
+
+    model = await ml_service.get_model_by_name(model_name=model_name)
+
+    assert model == None,  f"Model {model_name} was registered."
+
+
+@pytest.mark.asyncio
 async def test_get_model_by_name(ml_service: MlService, temp_model: str):
     model_path, model_name = temp_model
     version = 1

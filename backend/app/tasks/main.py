@@ -124,8 +124,7 @@ async def create_model(ml_service: MlService, model_name: str, model_ext: str, v
             model_ext=model_ext,
             base_model_path=base_model_path,
             version=version, 
-            output_dir=output_dir, 
-            ml_runs_path=CELERY_ML_RUNS_PATH, 
+            output_dir=output_dir,
             status_handler=redis_status_handler
             )
         if not create_result:

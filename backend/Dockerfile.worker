@@ -16,6 +16,7 @@ WORKDIR /src
 
 ARG ARCHIVE_PATH=/src/dataset_archive
 ARG ML_RUNS_PATH=/src/runs
+ARG INFERENCE_DIRECTORY=/src/inference_files
 
 COPY ./requirements.txt /src/requirements.txt
 
@@ -29,6 +30,7 @@ COPY ./app /src/app
 
 RUN mkdir -p $ARCHIVE_PATH && chmod 777 $ARCHIVE_PATH
 RUN mkdir -p $ML_RUNS_PATH && chmod 777 $ML_RUNS_PATH
+RUN mkdir -p $INFERENCE_DIRECTORY && chmod 777 $INFERENCE_DIRECTORY
 
 # Celery 워커 실행
 CMD ["celery", "-A", "app.tasks.main", "worker", "--loglevel=info"]

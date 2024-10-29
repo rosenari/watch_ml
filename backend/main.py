@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
-from app.apis import dataset_api, ml_api
+from app.apis import dataset_api, ml_api, inference_api
 from app.entity import create_tables
-from app.exceptions import ForbiddenException, NotFoundException
+from app.exceptions import ForbiddenException, NotFoundException, BadRequestException
 from app.repositories.ml_repository import create_base_model
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -43,6 +43,11 @@ async def global_exception_handler(request: Request, exc: Exception):
             status_code=403,
             content={"message": exc.message},
         )
+    elif isinstance(exc, BadRequestException):
+        return JSONResponse(
+            status_code=400,
+            content={"message": exc.message},
+        )
     # 기타 예외는 500 상태 코드로 반환
     return JSONResponse(
         status_code=500,
@@ -53,3 +58,4 @@ async def global_exception_handler(request: Request, exc: Exception):
 # 파일 관련 API 라우터 등록
 app.include_router(dataset_api.router, prefix="/dataset")
 app.include_router(ml_api.router, prefix="/ml")
+app.include_router(inference_api.router, prefix="/inference")

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, HTTPException, Depends
+from fastapi import APIRouter, UploadFile, Depends
 from typing import List
 from app.apis.models import FileValidationRequest
 from app.validation import validate_zip_file

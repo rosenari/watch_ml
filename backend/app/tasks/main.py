@@ -7,8 +7,10 @@ from app.tasks.deploy.deploy_ml_model import deploy_to_triton
 from app.tasks.deploy.undeploy_ml_model import undeploy_from_triton
 from app.services.dataset_service import DataSetService
 from app.services.ml_service import MlService
+from app.services.inference_service import InferenceService
 from app.dto import AiModelDTO
 from app.database import get_redis, get_session
+from app.repositories.inference_repository import get_file_type, FileType
 import os
 import asyncio
 import redis
@@ -192,5 +194,35 @@ async def undeploy_model(ml_service: MlService, model_name: str):
 
         return True
     except Exception as e:
-        logging.error(f"Unexpected Error in deploy_model task: {e}")
+        logging.error(f"Unexpected Error in undeploy_model task: {e}")
+        return False
+    
+
+@app.task
+def generate_inference_task(original_file_name: str):
+    loop = get_event_loop()
+    return loop.run_until_complete(with_service(InferenceService, generate_inference, original_file_name=original_file_name))
+
+
+async def generate_inference(inference_service: InferenceService, original_file_name: str):
+    try:
+        await inference_service.update_status(original_file_name, 'running')
+        await inference_service.session.commit()  # 중간 상태 커밋
+
+        file_type = get_file_type(original_file_name)
+        generate_file_path = None
+        if file_type == FileType.PHOTO:
+            generate_file_path = generate_photo_inference(original_file_name)
+        elif file_type == FileType.VIDEO:
+            generate_file_path = generate_video_inference(original_file_name)
+        else:
+            await inference_service.update_status(original_file_name, 'failed')
+            return False
+        
+        await inference_service.update_generated_file(original_file_name, generate_file_path)
+        await inference_service.update_status(original_file_name, 'complete')  # 완료 표시
+
+        return True
+    except Exception as e:
+        logging.error(f"Unexpected Error in generate_inference task: {e}")
         return False

@@ -18,3 +18,7 @@ class ModelCreateRequest(ModelDeployRequest):
     @property
     def file_name(self) -> str:
         return f"{self.m_name}.{self.m_ext}"
+    
+
+class InferenceGenerateRequest(BaseModel):
+    original_file_name: str

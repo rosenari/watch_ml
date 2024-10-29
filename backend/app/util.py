@@ -1,3 +1,6 @@
+from app.config import PHOTO_EXTENSIONS, VIDEO_EXTENSIONS
+
+
 # 파일 크기를 적절한 단위(byte, KB, MB, GB)로 변환
 def format_file_size(size_in_bytes: int) -> str:
         if size_in_bytes < 1024:

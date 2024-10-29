@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.entity import DataSet, Status
 from app.repositories.file_repository import FileRepository
+from app.exceptions import NotFoundException
 import os
 
 
@@ -40,7 +41,7 @@ class DatasetRepository:
         dataset = result.scalars().first()
         
         if not dataset:
-            raise FileNotFoundError(f"DataSet {file_name} not found in database.")
+            raise NotFoundException(f"DataSet {file_name} not found in database.")
         
         dataset.is_delete = True
         await self.db.flush()

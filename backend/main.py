@@ -1,10 +1,15 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from app.apis import dataset_api, ml_api
 from app.entity import create_tables
+from app.exceptions import ForbiddenException, NotFoundException
 from app.repositories.ml_repository import create_base_model
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
+import logging
+
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 @asynccontextmanager
@@ -25,7 +30,20 @@ app.add_middleware(
 )
 
 @app.exception_handler(Exception)
-async def global_exception_handler(request, exc: Exception):
+async def global_exception_handler(request: Request, exc: Exception):
+    logging.error(exc.message)
+
+    if isinstance(exc, NotFoundException):
+        return JSONResponse(
+            status_code=404,
+            content={"message": exc.message},
+        )
+    elif isinstance(exc, ForbiddenException):
+        return JSONResponse(
+            status_code=403,
+            content={"message": exc.message},
+        )
+    # 기타 예외는 500 상태 코드로 반환
     return JSONResponse(
         status_code=500,
         content={"message": "서버에서 알 수 없는 에러가 발생했습니다."},

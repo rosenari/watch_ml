@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from app.services.ml_service import get_ml_service, MlService
 from app.apis.models import ModelCreateRequest, ModelDeployRequest
 from app.tasks.main import create_model_task, deploy_model_task, undeploy_model_task
+from typing import List
 
 
 router = APIRouter()
@@ -27,3 +28,17 @@ async def deploy_ml_model(request: ModelDeployRequest):
     undeploy_model_task.delay(request.m_name)
 
     return { 'result': True }
+
+
+@router.get('/status', response_model=List[dict])
+async def get_ml_status(ml_service: MlService = Depends(get_ml_service)):
+    ml_status_list = await ml_service.get_model_status()
+    
+    return ml_status_list
+
+
+@router.get('/list', response_model=List[dict])
+async def get_ml_status(ml_service: MlService = Depends(get_ml_service)):
+    ml_list = await ml_service.get_model_list()
+    
+    return ml_list

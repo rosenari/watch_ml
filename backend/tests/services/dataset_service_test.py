@@ -2,10 +2,9 @@ import os
 import pytest
 import tempfile
 import pytest_asyncio
-from app.database import get_redis
 from fastapi import UploadFile
+from app.database import get_redis, get_session, async_engine
 from app.services.dataset_service import DataSetService
-from app.database import get_session, async_engine
 
 
 @pytest_asyncio.fixture

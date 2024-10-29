@@ -21,10 +21,19 @@ class InferenceService:
         file_path = os.path.join(self.dir, file.filename)
         inference_file = await self.repository.save_original_file(file_path, content)
         return inference_file.original_file_name
+    
+    @transactional
+    async def update_generated_file(self, original_file_name: str, generated_file_path: str):
+        inference_file = await self.repository.update_generated_file(original_file_name, generated_file_path)
+        return inference_file.serialize()
 
     @transactional
     async def delete_file(self, original_file_name: str) -> None:
         return await self.repository.delete_file(original_file_name)
+    
+    async def get_file_by_name(self, original_file_name: str) -> dict:
+        inference_file = await self.repository.get_inference_file_by_name(original_file_name)
+        return inference_file.serialize()
 
     async def get_file_list(self) -> List[dict]:
         result = []

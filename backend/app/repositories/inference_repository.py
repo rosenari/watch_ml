@@ -43,7 +43,13 @@ class InferenceRepository:
     
     async def update_generated_file(self, original_file_name: str, generated_file_path: str) -> InferenceFile:
         generated_file_name = os.path.basename(generated_file_path)
-        result = await self.db.execute(select(InferenceFile).filter(InferenceFile.original_file_name == original_file_name))
+        result = await self.db.execute(
+            select(InferenceFile)
+            .options(
+                selectinload(InferenceFile.original_file),
+                selectinload(InferenceFile.generated_file)
+            )
+            .filter(InferenceFile.original_file_name == original_file_name))
         inference_file = result.scalars().first()
 
         if not inference_file:
@@ -66,7 +72,12 @@ class InferenceRepository:
         await self.db.flush()
 
     async def get_inference_file_by_name(self, original_file_name) -> InferenceFile:
-        result = await self.db.execute(select(InferenceFile).filter(InferenceFile.original_file_name == original_file_name))
+        result = await self.db.execute(
+            select(InferenceFile)
+            .options(
+                selectinload(InferenceFile.original_file),
+                selectinload(InferenceFile.generated_file)
+            ).filter(InferenceFile.original_file_name == original_file_name))
         inference_file = result.scalars().first()
 
         if not inference_file:

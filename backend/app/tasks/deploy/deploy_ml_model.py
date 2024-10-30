@@ -19,7 +19,7 @@ def deploy_to_triton(model_name: str, version: int, model_path: str, triton_mode
 
         ## export 로직 필요. onnx로 변환
         model = YOLO(model_path)
-        onnx_model_path = model.export(format="onnx", dynamic=True, simplify=True)
+        onnx_model_path = model.export(format="onnx", imgsz=640, dynamic=True, simplify=False)
 
         shutil.copy(onnx_model_path, dest_path)
         output_dims = extract_output_dims(onnx_model_path)

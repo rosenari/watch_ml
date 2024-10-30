@@ -1,10 +1,11 @@
 from celery import Celery
-from app.config import CELERY_BROKER_URL, CELERY_ARCHIVE_PATH, CELERY_ML_RUNS_PATH, DATASET_DIRECTORY, MODEL_DIRECTORY, MODEL_REPOSITORY, TRITON_GRPC_URL
+from app.config import CELERY_BROKER_URL, CELERY_ARCHIVE_PATH, CELERY_ML_RUNS_PATH, MODEL_REPOSITORY, TRITON_GRPC_URL
 from app.tasks.valid.valid_archive import parse_and_verify_zip
 from app.tasks.train.merge_archive import merge_archive_files
 from app.tasks.train.create_ml_model import create_yolo_model
 from app.tasks.deploy.deploy_ml_model import deploy_to_triton
 from app.tasks.deploy.undeploy_ml_model import undeploy_from_triton
+from app.tasks.inference.generate_inference_file import generate_photo_inference, generate_video_inference
 from app.services.dataset_service import DataSetService
 from app.services.ml_service import MlService
 from app.services.inference_service import InferenceService

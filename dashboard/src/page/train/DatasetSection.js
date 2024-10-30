@@ -8,58 +8,68 @@ import { useExecuteRepeat } from 'hooks';
 
 const { Dragger } = Upload;
 
+const state = { dataset: [] };
 function DatasetSection() {
-  const [datasetData, setDatasetData] = useState([]);
+  const [datasetData, _setDatasetData] = useState([]);
   const [selectedDatasetKeys, setSelectedDatasetKeys] = useState([]);
-  const [fileList, setFileList] = useState([]); 
-  const [validDatasetData, _setValidDatasetData] = useState([]);
+  const [fileList, setFileList] = useState([]);
   const { executeRepeat, stopExecution } = useExecuteRepeat();
 
-  const reloadFileList = useCallback(async () => {
-    try {
-      const datasetList = await getDatasetList();
-      const validDatasetDataMap = validDatasetData.reduce((acc, { file_name, status }) => {
-        acc[file_name] = status;
-        return acc;
-      }, {});
-
-      const formatted_list = datasetList.map((dataset) => ({
-        key: dataset.file_name,
-        fileName: dataset.file_name,
-        uploadDate: dataset.file_meta.creation_date,
-        fileSize: dataset.file_meta.filesize,
-        valid: (dataset.file_name in validDatasetDataMap) ? validDatasetDataMap[dataset.file_name] : ''
-      }));
-    
-      setDatasetData([...formatted_list]);
-    } catch (e) {
-      console.error(`파일 목록 불러오기 실패: ${e}`);
-      stopExecution();
-    }
-  }, [validDatasetData, stopExecution]);
-
-  const setValidDatasetData = useCallback((newData) => {
-    _setValidDatasetData(newData);
-    reloadFileList();
-    const filterData = newData.filter((data) => (data.status === 'pending' || data.status === 'running'));
-    if (filterData.length === 0) {
-      stopExecution();
-    }
-  }, [stopExecution, reloadFileList]);
+  const setDatasetData = useCallback((newData) => {
+    _setDatasetData(newData);
+    state.dataset = [...newData];
+  }, [_setDatasetData]);
 
   const logicToPolling = useCallback(async () => {
     const validFiles = await getDatasetStatus();
-    setValidDatasetData([...validFiles]);
-  }, [setValidDatasetData]);
+    const modifiedDataset = state.dataset.map((dataset) => {
+      const updatedFile = validFiles.find((file) => file.file_name === dataset.fileName);
+      return {
+        ...dataset,
+        status: updatedFile ? updatedFile.status : dataset.status,
+      };
+    });
+    setDatasetData(modifiedDataset);
 
+    const runningCount = modifiedDataset.filter(
+      (dataset) => dataset.status === 'running' || dataset.status === 'pending'
+    ).length;
+  
+    if (runningCount === 0) {
+      stopExecution();
+    }
+  }, [setDatasetData, stopExecution]);
+  
   const startValidFilesPolling = useCallback(() => {
     executeRepeat(logicToPolling, 500);
   }, [executeRepeat, logicToPolling]);
 
+  const reloadFileList = useCallback(async () => {
+    try {
+      const datasetList = await getDatasetList();
+      const formatted_list = datasetList.map((dataset) => ({
+        key: dataset.file_name,
+        fileName: dataset.file_name,
+        uploadDate: dataset.file_meta.creation_time,
+        fileSize: dataset.file_meta.filesize,
+        status: dataset.status
+      }));
+
+      setDatasetData([...formatted_list]);
+
+      const runningCount = datasetList.filter((dataset) => dataset.status === 'running' || dataset.status === 'pending').length
+      if (runningCount > 0) {
+        startValidFilesPolling();
+      }
+    } catch (e) {
+      console.error(`파일 목록 불러오기 실패: ${e}`);
+      stopExecution();
+    }
+  }, [setDatasetData, stopExecution, startValidFilesPolling]);
+
   useEffect(() => {
     reloadFileList();
-    startValidFilesPolling();
-  }, [reloadFileList, startValidFilesPolling]);
+  }, [reloadFileList]);
 
   const handleUpload = async () => {
     if (fileList.length === 0) {
@@ -112,7 +122,9 @@ function DatasetSection() {
 
     validDataset(selectedDatasetKeys);
     setSelectedDatasetKeys([]);
-    startValidFilesPolling();
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    reloadFileList();
   };
 
   const uploadProps = {
@@ -132,9 +144,9 @@ function DatasetSection() {
       render: (text, record) => (
         <div>
           <span style={{ marginRight: '8px' }}>{text}</span>
-          {record.valid === 'complete' && <CheckOutlined style={{ color: 'green', marginRight: 8 }} />}
-          {record.valid === 'failed' && <ExclamationCircleOutlined style={{ color: 'red', marginRight: 8 }} />}
-          {(record.valid === 'running' || record.valid === 'pending') && <Spin indicator={<LoadingOutlined spin />} size="small" />}
+          {record.status === 'complete' && <CheckOutlined style={{ color: 'green', marginRight: 8 }} />}
+          {record.status === 'failed' && <ExclamationCircleOutlined style={{ color: 'red', marginRight: 8 }} />}
+          {(record.status === 'running' || record.status === 'pending') && <Spin indicator={<LoadingOutlined spin />} size="small" />}
         </div>
       ),
     },

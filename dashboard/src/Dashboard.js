@@ -50,7 +50,7 @@ function Dashboard() {
               fontWeight: 'bold',
             }}
           >
-            WATCH ML
+            YOLO STUDIO
           </div>
           <Menu
             mode="inline"

@@ -7,7 +7,9 @@ export function useExecuteRepeat() {
     const executeLogic = useCallback(async (logicToExecute, interval) => {
         try {
             await logicToExecute(); // 비동기 로직 실행
-            timeoutIdRef.current = setTimeout(() => executeLogic(logicToExecute, interval), interval); // 재귀적으로 실행
+            if (isRunningRef.current) {
+                timeoutIdRef.current = setTimeout(() => executeLogic(logicToExecute, interval), interval); // 재귀적으로 실행
+            }
         } catch (error) {
             console.error("작업 중 예외 발생:", error);
             clearTimeout(timeoutIdRef.current); // 예외 발생 시 타이머 중단

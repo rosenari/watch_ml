@@ -15,7 +15,7 @@ def create_yolo_model(model_name: str, model_ext: str, base_model_path: str, ver
     import torch
 
     file_name = f"{model_name}.{model_ext}"
-    epochs = 1
+    epochs = 100
     img_size = 640
 
     # data.yaml 파일 경로 설정
@@ -28,7 +28,7 @@ def create_yolo_model(model_name: str, model_ext: str, base_model_path: str, ver
         epoch = trainer.epoch
         total_epochs = trainer.epochs
         logging.info(f"Epoch {epoch + 1}/{total_epochs} completed")
-        status_handler(f"train:{model_name}", f"Epoch {epoch + 1} completed")
+        status_handler(f"train:{model_name}", f"{epoch}")
 
 
     try:

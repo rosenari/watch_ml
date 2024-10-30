@@ -81,7 +81,8 @@ def valid_archive_task(file_name):
 async def valid_archive(dataset_service: DataSetService, file_name: str):
     try: 
         zip_path = f"{CELERY_ARCHIVE_PATH}/{file_name}"   
-        await dataset_service.update_status(file_name, 'running') 
+        await dataset_service.update_status(file_name, 'running')
+        await dataset_service.session.commit()
 
         result = parse_and_verify_zip(zip_path)
         status = "complete" if result else "failed"

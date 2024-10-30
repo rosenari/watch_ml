@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layout, Menu } from 'antd';
-import { VideoCameraOutlined, BarChartOutlined } from '@ant-design/icons';
+import { ThunderboltTwoTone, ExperimentTwoTone } from '@ant-design/icons';
 import { Route, Routes, Link, Navigate, useLocation } from 'react-router-dom';
 import MonitoringPage from './page/MonitoringPage';
 import DeploymentPage from './page/DeploymentPage';
@@ -12,12 +12,12 @@ function Dashboard() {
   const menuItems = [
     {
       key: '/monitoring',
-      icon: <VideoCameraOutlined />,
-      label: <Link to="/monitoring">모니터링</Link>
+      icon: <ThunderboltTwoTone />,
+      label: <Link to="/monitoring">추론</Link>
     },
     {
       key: '/deployment',
-      icon: <BarChartOutlined />,
+      icon: <ExperimentTwoTone />,
       label: <Link to="/deployment">데이터 학습/배포</Link>
     },
   ];
@@ -46,11 +46,11 @@ function Dashboard() {
               height: '64px',
               textAlign: 'center',
               lineHeight: '64px',
-              fontSize: '16px',
+              fontSize: '23px',
               fontWeight: 'bold',
             }}
           >
-            실시간 모니터링 시스템
+            WATCH ML
           </div>
           <Menu
             mode="inline"

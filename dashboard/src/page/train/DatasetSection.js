@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Upload, Table, Button, message, Spin } from 'antd';
 import { InboxOutlined, CheckOutlined, LoadingOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
-import { fileUpload, getFileList, deleteFile, validFiles, getValidFiles } from 'api/dataset';
+import { datasetUpload, getDatasetList, deleteDataset, validDataset, getDatasetStatus } from 'api/dataset';
 import { useExecuteRepeat } from 'hooks';
 
 const { Dragger } = Upload;
@@ -12,23 +12,23 @@ function DatasetSection() {
   const [datasetData, setDatasetData] = useState([]);
   const [selectedDatasetKeys, setSelectedDatasetKeys] = useState([]);
   const [fileList, setFileList] = useState([]); 
-  const [validDatasetData, setValidDatasetData] = useState([]);
+  const [validDatasetData, _setValidDatasetData] = useState([]);
   const { executeRepeat, stopExecution } = useExecuteRepeat();
 
   const reloadFileList = useCallback(async () => {
     try {
-      const list = await getFileList();
+      const datasetList = await getDatasetList();
       const validDatasetDataMap = validDatasetData.reduce((acc, { file_name, status }) => {
         acc[file_name] = status;
         return acc;
       }, {});
 
-      const formatted_list = list.map((file) => ({
-        key: file.file_name,
-        fileName: file.file_name,
-        uploadDate: file.creation_date,
-        fileSize: file.file_size,
-        valid: (file.file_name in validDatasetDataMap) ? validDatasetDataMap[file.file_name] : ''
+      const formatted_list = datasetList.map((dataset) => ({
+        key: dataset.file_name,
+        fileName: dataset.file_name,
+        uploadDate: dataset.file_meta.creation_date,
+        fileSize: dataset.file_meta.filesize,
+        valid: (dataset.file_name in validDatasetDataMap) ? validDatasetDataMap[dataset.file_name] : ''
       }));
     
       setDatasetData([...formatted_list]);
@@ -38,26 +38,28 @@ function DatasetSection() {
     }
   }, [validDatasetData, stopExecution]);
 
-  const logicToPolling = useCallback(async () => {
-    const validFiles = await getValidFiles();
-    setValidDatasetData([...validFiles]);
-  }, []);
-
-  useEffect(() => {
+  const setValidDatasetData = useCallback((newData) => {
+    _setValidDatasetData(newData);
     reloadFileList();
-    const filterData = validDatasetData.filter((data) => (data.status === 'pending' || data.status === 'running'));
+    const filterData = newData.filter((data) => (data.status === 'pending' || data.status === 'running'));
     if (filterData.length === 0) {
       stopExecution();
     }
-  }, [validDatasetData, reloadFileList, stopExecution]);
+  }, [stopExecution, reloadFileList]);
+
+  const logicToPolling = useCallback(async () => {
+    const validFiles = await getDatasetStatus();
+    setValidDatasetData([...validFiles]);
+  }, [setValidDatasetData]);
 
   const startValidFilesPolling = useCallback(() => {
     executeRepeat(logicToPolling, 500);
   }, [executeRepeat, logicToPolling]);
 
   useEffect(() => {
+    reloadFileList();
     startValidFilesPolling();
-  }, [startValidFilesPolling]);
+  }, [reloadFileList, startValidFilesPolling]);
 
   const handleUpload = async () => {
     if (fileList.length === 0) {
@@ -67,7 +69,7 @@ function DatasetSection() {
 
     for (const file of fileList) {
       try {
-        const data = await fileUpload(file);
+        const data = await datasetUpload(file);
         if (data.file_name !== file.name) {
           throw new Error('정상적으로 업로드 되지 않음.');
         }
@@ -93,7 +95,7 @@ function DatasetSection() {
 
     for (const fileName of selectedDatasetKeys) {
       try {
-        const result = await deleteFile(fileName);
+        const result = await deleteDataset(fileName);
         result ? message.success(`${fileName} 삭제 성공`) : message.error(`${fileName} 삭제 실패`);
       } catch (error) {
         message.error(`${fileName} 삭제 실패`);
@@ -108,7 +110,7 @@ function DatasetSection() {
       message.warning('검사할 파일을 지정하지 않았습니다.');
     }
 
-    validFiles(selectedDatasetKeys);
+    validDataset(selectedDatasetKeys);
     setSelectedDatasetKeys([]);
     startValidFilesPolling();
   };

@@ -5,7 +5,7 @@ from app.tasks.train.merge_archive import merge_archive_files
 from app.tasks.train.create_ml_model import create_yolo_model
 from app.tasks.deploy.deploy_ml_model import deploy_to_triton
 from app.tasks.deploy.undeploy_ml_model import undeploy_from_triton
-from app.tasks.inference.generate_inference_file import generate_photo_inference, generate_video_inference
+from app.tasks.inference.generate_inference_file import generate_inference_file
 from app.services.dataset_service import DataSetService
 from app.services.ml_service import MlService
 from app.services.inference_service import InferenceService
@@ -200,22 +200,22 @@ async def undeploy_model(ml_service: MlService, model_name: str):
     
 
 @app.task
-def generate_inference_task(original_file_name: str):
+def generate_inference_task(original_file_name: str, model_name: str, classes: list[str]):
     loop = get_event_loop()
-    return loop.run_until_complete(with_service(InferenceService, generate_inference, original_file_name=original_file_name))
+    return loop.run_until_complete(with_service(InferenceService, generate_inference, original_file_name=original_file_name, model_name=model_name, classes=classes))
 
 
-async def generate_inference(inference_service: InferenceService, original_file_name: str):
+async def generate_inference(inference_service: InferenceService, original_file_name: str, model_name: str, classes: list[str]):
     try:
         await inference_service.update_status(original_file_name, 'running')
         await inference_service.session.commit()  # 중간 상태 커밋
 
         file_type = get_file_type(original_file_name)
+        file = await inference_service.get_file_by_name(original_file_name)
+        original_file_path = file['original_file']['filepath']
         generate_file_path = None
-        if file_type == FileType.PHOTO:
-            generate_file_path = generate_photo_inference(original_file_name)
-        elif file_type == FileType.VIDEO:
-            generate_file_path = generate_video_inference(original_file_name)
+        if file_type == FileType.PHOTO or file_type == FileType.VIDEO:
+            generate_file_path = generate_inference_file(file_type.value, original_file_path, model_name, classes)
         else:
             await inference_service.update_status(original_file_name, 'failed')
             return False

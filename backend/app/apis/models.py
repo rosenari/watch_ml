@@ -22,3 +22,4 @@ class ModelCreateRequest(ModelDeployRequest):
 
 class InferenceGenerateRequest(BaseModel):
     original_file_name: str
+    m_name: str

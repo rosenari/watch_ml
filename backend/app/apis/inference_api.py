@@ -3,6 +3,7 @@ from typing import List
 from app.apis.models import InferenceGenerateRequest
 from app.validation import validate_inference_file
 from app.services.inference_service import get_inference_service, InferenceService
+from app.services.ml_service import MlService, get_ml_service
 from app.tasks.main import generate_inference_task
 
 
@@ -17,8 +18,9 @@ async def upload_file(file: UploadFile = Depends(validate_inference_file), infer
 
 
 @router.post("/generate", response_model=dict)
-async def generate_inference_file(request: InferenceGenerateRequest):
-    generate_inference_task.delay(request.original_file_name)
+async def generate_inference_file(request: InferenceGenerateRequest, ml_service: MlService = Depends(get_ml_service)):
+    classes = await ml_service.get_model_classes(request.m_name)
+    generate_inference_task.delay(request.original_file_name, request.m_name, classes)
     return { 'result': True }
 
 

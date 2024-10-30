@@ -37,6 +37,6 @@ async def valid_file(request: FileValidationRequest, dataset_service: DataSetSer
     return { 'result': True }
     
 
-@router.get('/validation', response_model=List[dict])
+@router.get('/status', response_model=List[dict])
 async def get_valid_files(dataset_service: DataSetService = Depends(get_dataset_service)):
     return await dataset_service.get_file_status()

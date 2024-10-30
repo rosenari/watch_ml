@@ -2,8 +2,8 @@ import React from 'react';
 import { Layout, Menu } from 'antd';
 import { ThunderboltTwoTone, ExperimentTwoTone } from '@ant-design/icons';
 import { Route, Routes, Link, Navigate, useLocation } from 'react-router-dom';
-import MonitoringPage from './page/MonitoringPage';
-import DeploymentPage from './page/DeploymentPage';
+import InferencePage from 'page/inference/InferencePage';
+import TrainPage from 'page/train/TrainPage';
 import './Dashboard.css';
 
 const { Header, Sider, Content } = Layout;
@@ -11,14 +11,14 @@ const { Header, Sider, Content } = Layout;
 function Dashboard() {
   const menuItems = [
     {
-      key: '/monitoring',
+      key: '/inference',
       icon: <ThunderboltTwoTone />,
-      label: <Link to="/monitoring">추론</Link>
+      label: <Link to="/inference">추론</Link>
     },
     {
-      key: '/deployment',
+      key: '/train',
       icon: <ExperimentTwoTone />,
-      label: <Link to="/deployment">데이터 학습/배포</Link>
+      label: <Link to="/train">데이터 학습/배포</Link>
     },
   ];
 
@@ -85,9 +85,9 @@ function Dashboard() {
             }}
           >
             <Routes>
-              <Route path="/" element={<Navigate to="/monitoring" />} />
-              <Route path="/monitoring" element={<MonitoringPage />} />
-              <Route path="/deployment" element={<DeploymentPage />} />
+              <Route path="/" element={<Navigate to="/inference" />} />
+              <Route path="/inference" element={<InferencePage />} />
+              <Route path="/train" element={<TrainPage />} />
             </Routes>
           </Content>
         </Layout>

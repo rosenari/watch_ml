@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Upload, Table, Button, message, Spin } from 'antd';
 import { InboxOutlined, CheckOutlined, LoadingOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
-import { fileUpload, getFileList, deleteFile, validFiles, getValidFiles } from 'api/files';
+import { fileUpload, getFileList, deleteFile, validFiles, getValidFiles } from 'api/dataset';
 import { useExecuteRepeat } from 'hooks';
 
 const { Dragger } = Upload;

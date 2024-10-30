@@ -1,8 +1,11 @@
-export async function fileUpload(file) {
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
+
+export async function datasetUpload(file) {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch('http://localhost:5000/files/upload', {
+    const response = await fetch(`${API_BASE_URL}/dataset/upload`, {
         method: 'POST',
         body: formData,
     });
@@ -15,8 +18,9 @@ export async function fileUpload(file) {
     }
 }
 
-export async function getFileList() {
-    const response = await fetch('http://localhost:5000/files/list');
+
+export async function getDatasetList() {
+    const response = await fetch(`${API_BASE_URL}/dataset/list`);
     
     if (response.ok) {
         const list = await response.json();
@@ -26,8 +30,9 @@ export async function getFileList() {
     }
 }
 
-export async function deleteFile(fileName) {
-    const response = await fetch(`http://localhost:5000/files/${fileName}`, {
+
+export async function deleteDataset(fileName) {
+    const response = await fetch(`${API_BASE_URL}/dataset/${fileName}`, {
         method: 'DELETE'
     });
 
@@ -38,9 +43,10 @@ export async function deleteFile(fileName) {
     }
 }
 
-export async function validFiles(fileNames) {
+
+export async function validDataset(fileNames) {
     const requests = fileNames.map(fileName => 
-        fetch(`http://localhost:5000/files/validation`, {
+        fetch(`${API_BASE_URL}/dataset/validation`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -68,8 +74,9 @@ export async function validFiles(fileNames) {
     return results;
 }
 
-export async function getValidFiles() {
-    const response = await fetch(`http://localhost:5000/files/validation`);
+
+export async function getDatasetStatus() {
+    const response = await fetch(`${API_BASE_URL}/dataset/status`);
     if (response.ok) {
         const list = await response.json();
         return list;

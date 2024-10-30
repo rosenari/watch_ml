@@ -4,7 +4,6 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-
 def generate_inference_file(file_type: str, original_file_path: str, model_name: str, classes: list[str]) -> str:
     """Inference 파일 생성 (이미지 또는 비디오)"""
     # 필요한 모듈을 함수 내에서 로드
@@ -18,7 +17,6 @@ def generate_inference_file(file_type: str, original_file_path: str, model_name:
     nms_threshold = 0.4
     output_dir = INFERENCE_DIRECTORY
     output_path = os.path.join(output_dir, f"detection_{os.path.basename(original_file_path)}")
-    colors = _generate_primary_colors(len(classes))
     triton_client = grpcclient.InferenceServerClient(url=TRITON_GRPC_URL)
 
     def _generate_primary_colors(num_colors):
@@ -35,7 +33,7 @@ def generate_inference_file(file_type: str, original_file_path: str, model_name:
             color = tuple(max(0, min(255, base + var)) for base, var in zip(base_color, variation))
             colors.append(tuple(map(int, color)))
         return colors
-
+    
     def _draw_bounding_box(img, class_id, confidence, x, y, x_plus_w, y_plus_h, colors):
         """Bounding Box 그리기"""
         label = f"{classes[class_id]} ({confidence:.2f})"
@@ -83,6 +81,8 @@ def generate_inference_file(file_type: str, original_file_path: str, model_name:
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
+
+    colors = _generate_primary_colors(len(classes))
 
     if file_type == 'photo':
         # 사진에 대한 추론 로직

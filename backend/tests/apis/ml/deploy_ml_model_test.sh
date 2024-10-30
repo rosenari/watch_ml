@@ -2,7 +2,7 @@
 
 API_URL="http://localhost:5000/ml/deploy"
 
-MODEL_NAME="example_model"
+MODEL_NAME="fashion_model"
 
 curl -X POST "$API_URL" \
      -H "Content-Type: application/json" \

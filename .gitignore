@@ -10,6 +10,7 @@ __pycache__/
 .pytest_cache/
 merged_output/
 db/
+detection_results/
 
 
 ## dashboard ignore files

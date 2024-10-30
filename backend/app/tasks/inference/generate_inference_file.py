@@ -62,6 +62,10 @@ def generate_inference_file(file_type: str, original_file_path: str, model_name:
                 class_ids.append(int(class_id))
 
         indices = cv2.dnn.NMSBoxes(boxes, scores, confidence_threshold, nms_threshold)
+
+        if indices is None or len(indices) == 0:
+            return []
+    
         return [(boxes[i], scores[i], class_ids[i]) for i in indices.flatten()]
     
     def _process_frame(triton_client, model_name, frame, colors):

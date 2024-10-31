@@ -4,21 +4,19 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Upload, Table, Button, message, Spin } from 'antd';
 import { InboxOutlined, CheckOutlined, LoadingOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { datasetUpload, getDatasetList, deleteDataset, validDataset, getDatasetStatus } from 'api/dataset';
-import { useExecuteRepeat } from 'hooks';
+import { useExecuteRepeat, useModel, useDataset } from 'hooks';
+import ModelCreateModal from './components/ModelCreateModal';
+import "./DatasetSection.css";
 
 const { Dragger } = Upload;
 
-const state = { dataset: [] };
 function DatasetSection() {
-  const [datasetData, _setDatasetData] = useState([]);
+  const { modelData, setModelData, state } = useModel();
+  const { datasetData, setDatasetData } = useDataset();
   const [selectedDatasetKeys, setSelectedDatasetKeys] = useState([]);
   const [fileList, setFileList] = useState([]);
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const { executeRepeat, stopExecution } = useExecuteRepeat();
-
-  const setDatasetData = useCallback((newData) => {
-    _setDatasetData(newData);
-    state.dataset = [...newData];
-  }, [_setDatasetData]);
 
   const logicToPolling = useCallback(async () => {
     const validFiles = await getDatasetStatus();
@@ -38,7 +36,7 @@ function DatasetSection() {
     if (runningCount === 0) {
       stopExecution();
     }
-  }, [setDatasetData, stopExecution]);
+  }, [state, setDatasetData, stopExecution]);
   
   const startValidFilesPolling = useCallback(() => {
     executeRepeat(logicToPolling, 500);
@@ -126,7 +124,27 @@ function DatasetSection() {
     reloadFileList();
   };
 
+  const handleModelCreate = async () => {
+    if (selectedDatasetKeys.length === 0) {
+      message.warning('모델 생성을 위한 파일을 지정하지 않았습니다.');
+      return;
+    }
+
+    const hasIncompleteFiles = datasetData
+    .filter((dataset) => dataset.status !== 'complete')
+    .some((dataset) => selectedDatasetKeys.includes(dataset.fileName));
+
+    if (hasIncompleteFiles) {
+      message.warning('선택한 파일 중 검사되지 않은 파일이 있습니다.');
+      return;
+    }
+
+    setIsModalVisible(true);
+
+  }
+
   const uploadProps = {
+    multiple: true,
     beforeUpload: (file) => {
       setFileList((prevList) => [...prevList, file]);
       return false; 
@@ -182,12 +200,20 @@ function DatasetSection() {
         <Button className="reset-button" size="small" type="default" onClick={handleReset}>초기화</Button>
       </div>
 
+      <ModelCreateModal 
+        modelData={modelData}
+        isModalVisible={isModalVisible} 
+        setIsModalVisible={setIsModalVisible} 
+        selectedDatasetKeys={selectedDatasetKeys} 
+        setSelectedDatasetKeys={setSelectedDatasetKeys} />
+
       <div style={{ marginBottom: '20px' }}>
         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
           <h3 className="table-title">데이터셋</h3>
           <div>
             <Button type="default" size="small" className="table-button" style={{ marginRight: '5px' }} onClick={handleValid}>파일검사</Button>
-            <Button type="default" size="small" className="table-button" onClick={handleDelete}>파일삭제</Button>
+            <Button type="default" size="small" className="table-button" style={{ marginRight: '5px' }} onClick={handleDelete}>파일삭제</Button>
+            <Button type="default" size="small" className="table-button" onClick={handleModelCreate}>모델 생성</Button>
           </div>
         </div>
         <Table

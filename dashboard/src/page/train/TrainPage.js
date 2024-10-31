@@ -1,8 +1,6 @@
-// TrainPage.js
-
 import React from 'react';
-import DatasetSection from 'page/train/DatasetSection';
-import ModelTableSection from 'page/train/ModelSection';
+import DatasetSection from 'page/train/sections/DatasetSection';
+import ModelTableSection from 'page/train/sections/ModelSection';
 import './TrainPage.css';
 
 function TrainPage() {

@@ -1,4 +1,29 @@
 import { useRef, useEffect, useCallback } from 'react';
+import { modelAtom, datasetAtom, state } from 'store';
+import { useAtom } from 'jotai';
+
+
+export function useModel() {
+    const [modelData, _setModelData]  = useAtom(modelAtom);
+    const setModelData = useCallback((newData) => {
+        _setModelData(newData);
+        state.model = [...newData];
+    }, [_setModelData]);
+
+    return {modelData, setModelData, state};
+}
+
+
+export function useDataset() {
+    const [datasetData, _setDatasetData]  = useAtom(datasetAtom);
+    const setDatasetData = useCallback((newData) => {
+        _setDatasetData(newData);
+        state.dataset = [...newData];
+    }, [_setDatasetData]);
+
+    return {datasetData, setDatasetData, state};
+}
+
 
 export function useExecuteRepeat() {
     const isRunningRef = useRef(false); 

@@ -1,73 +1,25 @@
 // FileUploadSection.js
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Upload, Table, Button, message, Spin } from 'antd';
 import { InboxOutlined, CheckOutlined, LoadingOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
-import { datasetUpload, getDatasetList, deleteDataset, validDataset, getDatasetStatus } from 'api/dataset';
-import { useExecuteRepeat, useModel, useDataset } from 'hooks';
+import { datasetUpload, deleteDataset, validDataset } from 'api/dataset';
+import { useModel, useDataset } from 'hooks';
 import ModelCreateModal from './components/ModelCreateModal';
 import "./DatasetSection.css";
 
 const { Dragger } = Upload;
 
-function DatasetSection() {
-  const { modelData, setModelData, state } = useModel();
-  const { datasetData, setDatasetData } = useDataset();
-  const [selectedDatasetKeys, setSelectedDatasetKeys] = useState([]);
-  const [fileList, setFileList] = useState([]);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const { executeRepeat, stopExecution } = useExecuteRepeat();
-
-  const logicToPolling = useCallback(async () => {
-    const validFiles = await getDatasetStatus();
-    const modifiedDataset = state.dataset.map((dataset) => {
-      const updatedFile = validFiles.find((file) => file.file_name === dataset.fileName);
-      return {
-        ...dataset,
-        status: updatedFile ? updatedFile.status : dataset.status,
-      };
-    });
-    setDatasetData(modifiedDataset);
-
-    const runningCount = modifiedDataset.filter(
-      (dataset) => dataset.status === 'running' || dataset.status === 'pending'
-    ).length;
-  
-    if (runningCount === 0) {
-      stopExecution();
-    }
-  }, [state, setDatasetData, stopExecution]);
-  
-  const startValidFilesPolling = useCallback(() => {
-    executeRepeat(logicToPolling, 500);
-  }, [executeRepeat, logicToPolling]);
-
-  const reloadFileList = useCallback(async () => {
-    try {
-      const datasetList = await getDatasetList();
-      const formatted_list = datasetList.map((dataset) => ({
-        key: dataset.file_name,
-        fileName: dataset.file_name,
-        uploadDate: dataset.file_meta.creation_time,
-        fileSize: dataset.file_meta.filesize,
-        status: dataset.status
-      }));
-
-      setDatasetData([...formatted_list]);
-
-      const runningCount = datasetList.filter((dataset) => dataset.status === 'running' || dataset.status === 'pending').length
-      if (runningCount > 0) {
-        startValidFilesPolling();
-      }
-    } catch (e) {
-      console.error(`파일 목록 불러오기 실패: ${e}`);
-      stopExecution();
-    }
-  }, [setDatasetData, stopExecution, startValidFilesPolling]);
+function DatasetSection({ reloadDatasetList, reloadModelList }) {
+  const { modelData } = useModel();
+  const { datasetData } = useDataset();
+  const [ selectedDatasetKeys, setSelectedDatasetKeys] = useState([]);
+  const [ fileList, setFileList] = useState([]);
+  const [ isModalVisible, setIsModalVisible] = useState(false);
 
   useEffect(() => {
-    reloadFileList();
-  }, [reloadFileList]);
+    reloadDatasetList();
+  }, [reloadDatasetList]);
 
   const handleUpload = async () => {
     if (fileList.length === 0) {
@@ -82,7 +34,7 @@ function DatasetSection() {
           throw new Error('정상적으로 업로드 되지 않음.');
         }
         message.success(`${file.name} 업로드 성공`);
-        reloadFileList();
+        reloadDatasetList();
       } catch (error) {
         console.error(error);
         message.error(`${file.name} 업로드 실패`);
@@ -110,7 +62,7 @@ function DatasetSection() {
       }
     }
 
-    reloadFileList();
+    reloadDatasetList();
   };
 
   const handleValid = async () => {
@@ -121,7 +73,7 @@ function DatasetSection() {
     await validDataset(selectedDatasetKeys);
     setSelectedDatasetKeys([]);
 
-    reloadFileList();
+    reloadDatasetList();
   };
 
   const handleModelCreate = async () => {
@@ -200,12 +152,12 @@ function DatasetSection() {
         <Button className="reset-button" size="small" type="default" onClick={handleReset}>초기화</Button>
       </div>
 
-      <ModelCreateModal 
-        modelData={modelData}
+      <ModelCreateModal
         isModalVisible={isModalVisible} 
         setIsModalVisible={setIsModalVisible} 
         selectedDatasetKeys={selectedDatasetKeys} 
-        setSelectedDatasetKeys={setSelectedDatasetKeys} />
+        setSelectedDatasetKeys={setSelectedDatasetKeys}
+        reloadModelList={reloadModelList} />
 
       <div style={{ marginBottom: '20px' }}>
         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>

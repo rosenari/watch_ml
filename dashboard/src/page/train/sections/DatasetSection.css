@@ -13,3 +13,7 @@
 .ant-select-selection-search-input{
     border-radius: 1px;
 }
+
+.ant-input-outlined{
+    font-size: 12px;
+}

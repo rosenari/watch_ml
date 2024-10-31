@@ -1,12 +1,14 @@
 // ModelTableSection.js
 
-import React, { useState, useCallback, useEffect } from 'react';
-import { Table, Button, Tag } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Table, Button, Tag, Spin, Progress  } from 'antd';
+import { blue } from '@ant-design/colors';
 import { useModel } from 'hooks';
-import { getModelList, getModelStatus, deployModel, undeployModel } from 'api/ml';
+import { CheckOutlined, LoadingOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { deployModel, undeployModel } from 'api/ml';
 
-function ModelTableSection() {
-  const { modelData, setModelData, state } = useModel();
+function ModelTableSection({ reloadModelList }) {
+  const { modelData, setModelData } = useModel();
   const [selectedModelKeys, setSelectedModelKeys] = useState([]);
 
   const modelColumns = [
@@ -17,7 +19,29 @@ function ModelTableSection() {
       render: (text, record) => (
         <span>
           {text}
-          {record.version && <Tag color="blue" style={{ marginLeft: 8, fontSize: '10px', padding: '3px', lineHeight: '8px', borderRadius: '2px' }}>{`v${record.version}`}</Tag>}
+          {record.version && (
+            <Tag color="blue" style={{ marginLeft: 8, fontSize: '10px', padding: '3px', lineHeight: '8px', borderRadius: '2px' }}>
+              {`v${record.version}`}
+            </Tag>
+          )}
+          {/^\d+$/.test(record.status) ? (
+            <>
+              <LoadingOutlined spin style={{ marginRight: '5px' }} />
+              <Progress
+                percent={record.status}
+                size="small"
+                steps={10}
+                strokeColor={blue[6]}
+                style={{ width: 0, marginLeft: 3, fontSize: '10px' }}
+              />
+            </>
+          ) : (
+            <>
+              {record.status === 'complete' && <CheckOutlined style={{ color: 'green', marginRight: 8 }} />}
+              {record.status === 'failed' && <ExclamationCircleOutlined style={{ color: 'red', marginRight: 8 }} />}
+              {(record.status === 'running' || record.status === 'pending') && <Spin indicator={<LoadingOutlined spin />} size="small" />}
+            </>
+          )}
         </span>
       ),
     },
@@ -36,36 +60,6 @@ function ModelTableSection() {
     },
     getCheckboxProps: (record) => ({ disabled: record.current }),
   };
-
-  const reloadModelList = useCallback(async () => {
-    try {
-      const modelList = await getModelList();
-      const formatted_list = modelList.map((model) => ({
-        key: model.model_name,
-        modelName: model.model_name,
-        version: model.version,
-        map50: model.map50 ?? '-',
-        map50_95: model.map50_95 ?? '-',
-        precision: model.precision ?? '-',
-        recall: model.recall ?? '-',
-        classes: model.classes ?? '-',
-        status: model.status,
-        isDeploy: model.is_deploy ? '🚀' : '-',
-        baseModelName: model.base_model ? model.base_model.model_name : '-'
-      }));
-
-      setModelData([...formatted_list]);
-
-      const runningCount = modelList.filter((model) => model.status === 'running' || model.status === 'pending').length
-      if (runningCount > 0) {
-        //startValidFilesPolling();
-      }
-    } catch (e) {
-      console.error(`파일 목록 불러오기 실패: ${e}`);
-      //stopExecution();
-    }
-  }, [setModelData]);
-
   useEffect(() =>{
     reloadModelList();
   }, [reloadModelList]);

@@ -17,14 +17,16 @@ async def create_ml_model(request: ModelCreateRequest, ml_service: MlService = D
     
 
 @router.post('/deploy', response_model=dict)
-async def deploy_ml_model(request: ModelDeployRequest):
+async def deploy_ml_model(request: ModelDeployRequest, ml_service: MlService = Depends(get_ml_service)):
+    await ml_service.update_status(request.m_name, 'pending')
     deploy_model_task.delay(request.m_name)
 
     return { 'result': True }
     
 
 @router.post('/undeploy', response_model=dict)
-async def deploy_ml_model(request: ModelDeployRequest):
+async def deploy_ml_model(request: ModelDeployRequest, ml_service: MlService = Depends(get_ml_service)):
+    await ml_service.update_status(request.m_name, 'pending')
     undeploy_model_task.delay(request.m_name)
 
     return { 'result': True }

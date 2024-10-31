@@ -1,7 +1,7 @@
 // ModelTableSection.js
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Tag, Spin, Progress  } from 'antd';
+import { Table, Button, Tag, Spin, Progress, message  } from 'antd';
 import { blue } from '@ant-design/colors';
 import { useModel } from 'hooks';
 import { CheckOutlined, LoadingOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
@@ -64,13 +64,35 @@ function ModelTableSection({ reloadModelList }) {
     reloadModelList();
   }, [reloadModelList]);
 
+  const handleDeploy = async () => {
+    if (selectedModelKeys.length === 0) {
+      message.warning('배포할 모델을 선택해주세요.');
+    }
+
+    await deployModel({ modelName: selectedModelKeys[0] });
+    setSelectedModelKeys([]);
+
+    reloadModelList();
+  }
+
+  const handleUnDeploy = async () => {
+    if (selectedModelKeys.length === 0) {
+      message.warning('배포 해제할 모델을 선택해주세요.');
+    }
+
+    await undeployModel({ modelName: selectedModelKeys[0] });
+    setSelectedModelKeys([]);
+
+    reloadModelList();
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h3 className="table-title">모델</h3>
         <div>
-          <Button type="default" size="small" className="table-button" style={{ marginRight: '5px' }}>배포</Button>
-          <Button type="default" size="small" className="table-button">배포 해제</Button>
+          <Button type="default" size="small" className="table-button" style={{ marginRight: '5px' }} onClick={handleDeploy}>배포</Button>
+          <Button type="default" size="small" className="table-button" onClick={handleUnDeploy}>배포 해제</Button>
         </div>
       </div>
       <Table

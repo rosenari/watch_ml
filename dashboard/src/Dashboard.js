@@ -11,15 +11,15 @@ const { Header, Sider, Content } = Layout;
 function Dashboard() {
   const menuItems = [
     {
-      key: '/inference',
-      icon: <ThunderboltTwoTone />,
-      label: <Link to="/inference">추론</Link>
-    },
-    {
       key: '/train',
       icon: <ExperimentTwoTone />,
       label: <Link to="/train">데이터 학습/배포</Link>
     },
+    {
+      key: '/inference',
+      icon: <ThunderboltTwoTone />,
+      label: <Link to="/inference">추론</Link>
+    }
   ];
 
   const location = useLocation();

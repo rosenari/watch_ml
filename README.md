@@ -1,3 +1,3 @@
-# WATCH ML
+# YOLO STUDIO
 
-간편한 ml 테스트 시스템
+yolo 기반 추론/학습/배포

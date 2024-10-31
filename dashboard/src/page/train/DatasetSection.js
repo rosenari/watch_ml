@@ -120,9 +120,8 @@ function DatasetSection() {
       message.warning('검사할 파일을 지정하지 않았습니다.');
     }
 
-    validDataset(selectedDatasetKeys);
+    await validDataset(selectedDatasetKeys);
     setSelectedDatasetKeys([]);
-    await new Promise((resolve) => setTimeout(resolve, 500));
 
     reloadFileList();
   };

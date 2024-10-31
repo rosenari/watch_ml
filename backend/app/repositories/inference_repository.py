@@ -1,6 +1,6 @@
 from typing import List, Union
 
-from sqlalchemy import desc, and_
+from sqlalchemy import desc, and_, or_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -122,6 +122,31 @@ class InferenceRepository:
         inference_file.status = new_status
         self.db.add(inference_file)
         await self.db.flush()
+
+    async def get_file_path(self, file_name: str) -> str:
+        result = await self.db.execute(
+            select(InferenceFile)
+            .options(
+                selectinload(InferenceFile.original_file),
+                selectinload(InferenceFile.generated_file)
+            )
+            .filter(
+                or_(
+                    InferenceFile.original_file_name == file_name,
+                    InferenceFile.generated_file_name == file_name
+                )
+            )
+        )
+        
+        inference_file = result.scalars().first()
+        
+        if inference_file:
+            if inference_file.original_file_name == file_name:
+                return inference_file.original_file.filepath
+            elif inference_file.generated_file_name == file_name:
+                return inference_file.generated_file.filepath
+        
+        raise NotFoundException("get_file_path: File not found")
 
 
 def get_file_type(file_name: str) -> Union[FileType, None]:

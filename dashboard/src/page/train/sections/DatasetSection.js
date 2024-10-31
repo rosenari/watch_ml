@@ -4,14 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { Upload, Table, Button, message, Spin } from 'antd';
 import { InboxOutlined, CheckOutlined, LoadingOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { datasetUpload, deleteDataset, validDataset } from 'api/dataset';
-import { useModel, useDataset } from 'hooks';
+import { useDataset } from 'hooks';
 import ModelCreateModal from './components/ModelCreateModal';
 import "./DatasetSection.css";
 
 const { Dragger } = Upload;
 
 function DatasetSection({ reloadDatasetList, reloadModelList }) {
-  const { modelData } = useModel();
   const { datasetData } = useDataset();
   const [ selectedDatasetKeys, setSelectedDatasetKeys] = useState([]);
   const [ fileList, setFileList] = useState([]);

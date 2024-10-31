@@ -2,7 +2,7 @@ import React, {useCallback} from 'react';
 import DatasetSection from 'page/train/sections/DatasetSection';
 import ModelTableSection from 'page/train/sections/ModelSection';
 import { useExecuteRepeat, useModel, useDataset } from 'hooks';
-import { loadDatasetList, pollDatasetStatus, loadModelList, pollModelStatus } from './reloader';
+import { loadDatasetList, pollDatasetStatus, loadModelList, pollModelStatus } from 'reloader';
 import './TrainPage.css';
 
 function TrainPage() {

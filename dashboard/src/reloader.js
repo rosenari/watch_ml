@@ -1,7 +1,7 @@
 
 import { getDatasetList, getDatasetStatus } from 'api/dataset';
 import { getModelList, getModelStatus } from 'api/ml';
-
+import { getInferenceList, getInferenceStatus } from 'api/inference';
 
 export const formatModelList = (modelList) => {
     return modelList.map((model) => ({
@@ -83,7 +83,7 @@ export const loadModelList = async (setModelData, startPolling, stopExecution) =
       startPolling();
     }
   } catch (error) {
-    console.error(`Failed to load file list: ${error}`);
+    console.error(`Failed to load model list: ${error}`);
     stopExecution();
   }
 };
@@ -113,3 +113,63 @@ export const pollModelStatus = async (setModelData, stopExecution, state) => {
       setModelData(formattedList);
     }
   };
+
+  
+  export const formatInferenceList = (inferenceList) => {
+    return inferenceList.map((inference) => ({
+      key: inference.original_file_name,
+      originalFileName: inference.original_file_name,
+      originalFileSize: inference.original_file.filesize,
+      generatedFileName: inference.generated_file_name ?? '-',
+      generatedFileSize: inference.generated_file ? inference.generated_file.filesize : '-',
+      fileType: inference.file_type,
+      status: inference.status,
+  }));
+  }
+
+
+  export const loadInferenceList = async (setInferenceData, startPolling, stopExecution) => {
+    try {
+      const inferenceList = await getInferenceList();
+      const formattedList = formatInferenceList(inferenceList);
+  
+      setInferenceData(formattedList);
+  
+      const hasRunningItems = inferenceList.some(
+        (inference) => inference.status === 'running' || inference.status === 'pending'
+      );
+  
+      if (hasRunningItems) {
+        startPolling();
+      }
+    } catch (error) {
+      console.error(`Failed to load inference list: ${error}`);
+      stopExecution();
+    }
+  };
+  
+  
+  export const pollInferenceStatus = async (setInferenceData, stopExecution, state) => {
+      const inferenceStatus = await getInferenceStatus();
+      const updatedInference = state.inference.map((inference) => {
+        const newInferenceStatus = inferenceStatus.find((inference_status) => inference_status.original_file_name === inference.originalFileName);
+        return {
+          ...inference,
+          status: newInferenceStatus ? newInferenceStatus.status : inference.status,
+        };
+      });
+    
+      setInferenceData(updatedInference);
+    
+      const hasRunningItems = updatedInference.some(
+        (inference) => inference.status === 'running' || inference.status === 'pending'
+      );
+    
+      if (!hasRunningItems) {
+        stopExecution();
+        const inferenceList = await getInferenceList();
+        const formattedList = formatInferenceList(inferenceList);
+  
+        setInferenceData(formattedList);
+      }
+    };

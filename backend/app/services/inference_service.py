@@ -59,6 +59,9 @@ class InferenceService:
 
         return await self.repository.update_status(original_file_name, new_status)
     
+    async def get_file_path(self, file_name: str):
+        return await self.repository.get_file_path(file_name)
+    
 
 async def get_inference_service(redis = Depends(get_redis), session = Depends(get_session)):
     yield InferenceService(redis, session)

@@ -5,6 +5,7 @@ from app.validation import validate_inference_file
 from app.services.inference_service import get_inference_service, InferenceService
 from app.services.ml_service import MlService, get_ml_service
 from app.tasks.main import generate_inference_task
+from fastapi.responses import FileResponse
 
 
 router = APIRouter()
@@ -18,7 +19,8 @@ async def upload_file(file: UploadFile = Depends(validate_inference_file), infer
 
 
 @router.post("/generate", response_model=dict)
-async def generate_inference_file(request: InferenceGenerateRequest, ml_service: MlService = Depends(get_ml_service)):
+async def generate_inference_file(request: InferenceGenerateRequest, inference_service: InferenceService = Depends(get_inference_service), ml_service: MlService = Depends(get_ml_service)):
+    await inference_service.update_status(request.original_file_name, 'pending')
     classes = await ml_service.get_model_classes(request.m_name)
     generate_inference_task.delay(request.original_file_name, request.m_name, classes)
     return { 'result': True }
@@ -40,3 +42,11 @@ async def get_file_list(inference_service: InferenceService = Depends(get_infere
 @router.get("/status", response_model=List[dict])
 async def get_file_status(inference_service: InferenceService = Depends(get_inference_service)):
     return await inference_service.get_file_status()
+
+
+@router.get("/download/{filename}")
+async def download_file(filename: str, inference_service: InferenceService = Depends(get_inference_service)):
+    file_path = await inference_service.get_file_path(filename)
+
+    # 파일 응답 반환
+    return FileResponse(path=file_path, filename=filename, media_type='application/octet-stream')

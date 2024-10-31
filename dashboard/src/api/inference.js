@@ -53,7 +53,7 @@ export async function deleteOriginalFile(originalFileName) {
 }
 
 
-export async function getModelList() {
+export async function getInferenceList() {
     const response = await fetch(`${API_BASE_URL}/inference/list`);
     
     if (response.ok) {
@@ -65,7 +65,7 @@ export async function getModelList() {
 }
 
 
-export async function getModelStatus() {
+export async function getInferenceStatus() {
     const response = await fetch(`${API_BASE_URL}/inference/status`);
     
     if (response.ok) {
@@ -74,4 +74,9 @@ export async function getModelStatus() {
     } else {
         throw new Error(response.statusText);
     }
+}
+
+
+export function downloadFileLink(filename) {
+    return `${API_BASE_URL}/inference/download/${filename}`
 }

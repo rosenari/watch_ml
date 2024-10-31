@@ -1,5 +1,5 @@
 import { useRef, useEffect, useCallback } from 'react';
-import { modelAtom, datasetAtom, state } from 'store';
+import { modelAtom, datasetAtom, state, inferenceAtom } from 'store';
 import { useAtom } from 'jotai';
 
 
@@ -23,6 +23,18 @@ export function useDataset() {
 
     return {datasetData, setDatasetData, state};
 }
+
+
+export function useInference() {
+    const [inferenceData, _setInferenceData]  = useAtom(inferenceAtom);
+    const setInferenceData = useCallback((newData) => {
+        _setInferenceData(newData);
+        state.inference = [...newData];
+    }, [_setInferenceData]);
+
+    return {inferenceData, setInferenceData, state};
+}
+
 
 
 export function useExecuteRepeat() {

@@ -8,7 +8,7 @@ import { CheckOutlined, LoadingOutlined, ExclamationCircleOutlined } from '@ant-
 import { deployModel, undeployModel } from 'api/ml';
 
 function ModelTableSection({ reloadModelList }) {
-  const { modelData, setModelData } = useModel();
+  const { modelData } = useModel();
   const [selectedModelKeys, setSelectedModelKeys] = useState([]);
 
   const modelColumns = [

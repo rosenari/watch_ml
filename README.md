@@ -74,12 +74,11 @@ npm run start
 > 검사 중에는 스피너가 돌며 완료 시 체크 표시가 노출됩니다.
 
 ### 모델 학습 및 배포
-![train](https://github.com/user-attachments/assets/7df59e72-0d92-4d49-9589-e8473edfe368)
-> 학습 시킬 아카이브 파일과 base 모델을 선택하여 학습하고 새로운 모델을 생성 할 수 있습니다.
-> 생성된 모델은 실시간 추론 서버에 배포가 가능합니다.
-
 ![train](https://github.com/user-attachments/assets/fa2faab6-fbd9-4259-83ce-2c359b7a9484)
-> 여러 아카이브를 선택하여 모델 생성을 요청하면 병합하여 학습을 진행합니다.
+> 여러 아카이브를 선택하고 base 모델을 기반으로 생성을 요청하면 병합하여 학습을 진행합니다.
+
+![train](https://github.com/user-attachments/assets/7df59e72-0d92-4d49-9589-e8473edfe368)
+> 학습 시 진행률이 실시간으로 표시되며 완료 시 배포가 가능해집니다.
 
 ### 이미지/영상 파일 업로드
 ![fileupload](https://github.com/user-attachments/assets/e3fa9c35-3fd5-4bd0-b988-b2d44f9aa925)

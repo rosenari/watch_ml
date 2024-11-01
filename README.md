@@ -21,7 +21,7 @@ docker-compose up -d
 ```bash
 cd dashboard
 
-yarn add
+yarn install
 
 npm run start
 ```
@@ -67,14 +67,18 @@ npm run start
 > zip 파일 형태의 데이터 셋 아카이브를 업로드 할 수 있습니다.
 
 ### 데이터 셋 파일 검사
-![valid (1)](https://github.com/user-attachments/assets/11ebbe97-3ded-482a-bd8e-5cb49783dcc6)
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/11ebbe97-3ded-482a-bd8e-5cb49783dcc6">
+</p>
 > 업로드된 아카이브 내 data.yaml, 디렉터리/파일 구조, 라벨 파일을 차례로 분석합니다.
 
 ![valid](https://github.com/user-attachments/assets/418e55d1-f51d-4f09-b9f9-5436462c164f)
 > 검사 중에는 스피너가 돌며 완료 시 체크 표시가 노출됩니다.
 
 ### 모델 학습 및 배포
-![train](https://github.com/user-attachments/assets/fa2faab6-fbd9-4259-83ce-2c359b7a9484)
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/fa2faab6-fbd9-4259-83ce-2c359b7a9484">
+</p>
 > 여러 아카이브를 선택하고 base 모델을 기반으로 생성을 요청하면 병합하여 학습을 진행합니다.
 
 ![train](https://github.com/user-attachments/assets/7df59e72-0d92-4d49-9589-e8473edfe368)
@@ -85,7 +89,9 @@ npm run start
 > 추론을 위한 이미지/영상 파일을 업로드 할 수 있습니다.
 
 ### 추론
-![polling](https://github.com/user-attachments/assets/040d0fa0-4b08-4789-b778-91e25bddd6f1)
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/040d0fa0-4b08-4789-b778-91e25bddd6f1">
+</p>
 > 검사, 학습, 배포, 추론 과정에서 폴링 모듈은 status 상태에 따라 요청을 반복할지 멈출지 결정합니다.
 
 ![inference](https://github.com/user-attachments/assets/55e6dd2f-75b9-42e3-9853-467bbab0dfd6)

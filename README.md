@@ -98,4 +98,6 @@ npm run start
 > 이미지 또는 영상을 선택하고 배포된 모델을 선택하여 추론을 수행하면 결과 파일이 생성됩니다.
 
 ### 추론 결과 확인
-![result](https://github.com/user-attachments/assets/f6a38e1c-6c62-46bc-98d4-5c5942787252)
+<p align="center">
+<img src="https://github.com/user-attachments/assets/a80d4474-614f-4311-9aa3-9764c507e803">
+</p>

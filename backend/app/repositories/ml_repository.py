@@ -1,5 +1,5 @@
 from sqlalchemy import desc, and_
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.exc import NoResultFound
@@ -83,9 +83,9 @@ class MlRepository:
             result = await self.db.execute(
                 select(AiModel)
                 .options(
-                    selectinload(AiModel.model_file),
-                    selectinload(AiModel.deploy_file),
-                    selectinload(AiModel.base_model).selectinload(AiModel.model_file),
+                    joinedload(AiModel.model_file),
+                    joinedload(AiModel.deploy_file),
+                    joinedload(AiModel.base_model).joinedload(AiModel.model_file),
                 )
                 .filter(and_(AiModel.is_delete == False, AiModel.modelname == model_name))
             )
@@ -106,9 +106,9 @@ class MlRepository:
         result = await self.db.execute(
         select(AiModel)
         .options(
-            selectinload(AiModel.model_file),
-            selectinload(AiModel.deploy_file),
-            selectinload(AiModel.base_model).selectinload(AiModel.model_file)
+            joinedload(AiModel.model_file),
+            joinedload(AiModel.deploy_file),
+            joinedload(AiModel.base_model).joinedload(AiModel.model_file)
         )
         .filter(AiModel.is_delete == False)
         .order_by(desc(AiModel.id))

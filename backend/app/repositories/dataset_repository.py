@@ -1,7 +1,7 @@
 from typing import List
 
 from sqlalchemy import desc
-from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.entity import DataSet, Status
@@ -50,8 +50,7 @@ class DatasetRepository:
     async def list_files_with_filemeta(self) -> List[DataSet]:
         result = await self.db.execute(
             select(DataSet)
-            .join(DataSet.file_meta) 
-            .options(contains_eager(DataSet.file_meta))
+            .options(joinedload(DataSet.file_meta))
             .filter(DataSet.is_delete == False)
             .order_by(desc(DataSet.id))
         )

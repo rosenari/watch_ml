@@ -1,7 +1,7 @@
 from typing import List, Union
 
 from sqlalchemy import desc, and_, or_
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.entity import InferenceFile, Status, FileType
@@ -47,8 +47,8 @@ class InferenceRepository:
         result = await self.db.execute(
             select(InferenceFile)
             .options(
-                selectinload(InferenceFile.original_file),
-                selectinload(InferenceFile.generated_file)
+                joinedload(InferenceFile.original_file),
+                joinedload(InferenceFile.generated_file)
             )
             .filter(InferenceFile.original_file_name == original_file_name))
         inference_file = result.scalars().first()
@@ -76,8 +76,8 @@ class InferenceRepository:
         result = await self.db.execute(
             select(InferenceFile)
             .options(
-                selectinload(InferenceFile.original_file),
-                selectinload(InferenceFile.generated_file)
+                joinedload(InferenceFile.original_file),
+                joinedload(InferenceFile.generated_file)
             ).filter(InferenceFile.original_file_name == original_file_name))
         inference_file = result.scalars().first()
 
@@ -91,8 +91,8 @@ class InferenceRepository:
         result = await self.db.execute(
             select(InferenceFile)
                 .options(
-                    selectinload(InferenceFile.original_file),
-                    selectinload(InferenceFile.generated_file)
+                    joinedload(InferenceFile.original_file),
+                    joinedload(InferenceFile.generated_file)
                 )
                 .filter(and_(InferenceFile.is_delete == False))
                 .order_by(desc(InferenceFile.id))
@@ -127,8 +127,8 @@ class InferenceRepository:
         result = await self.db.execute(
             select(InferenceFile)
             .options(
-                selectinload(InferenceFile.original_file),
-                selectinload(InferenceFile.generated_file)
+                joinedload(InferenceFile.original_file),
+                joinedload(InferenceFile.generated_file)
             )
             .filter(
                 or_(

@@ -175,7 +175,7 @@ function InferenceSection({ reloadInferenceList }) {
               value={selectedModel}
               onChange={(value) => setSelectedModel(value)}
             >
-              {modelList.filter((model) => model.status === 'complete').map((model) => (
+              {modelList.filter((model) => model.status === 'complete' && model.is_deploy === true).map((model) => (
                     <Option key={model.model_name} value={model.model_name}>
                         {model.model_name}
                     </Option>

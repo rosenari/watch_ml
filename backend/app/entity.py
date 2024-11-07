@@ -51,8 +51,11 @@ class DataSet(Base):
     status = Column(Enum(Status), nullable=False, default=Status.READY)
     is_delete = Column(Boolean, default=False)
 
-    file_meta_id = Column(Integer, ForeignKey('file_meta.id'), nullable=False)
+    file_meta_id = Column(Integer, ForeignKey('file_meta.id'), nullable=True)
     file_meta = relationship("FileMeta", back_populates="dataset")
+
+    def is_dir(self) -> bool:
+        return self.file_meta_id is None
 
     def serialize(self) -> dict:
         return {

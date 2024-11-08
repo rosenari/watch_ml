@@ -17,11 +17,11 @@ class InferenceService:
 
     @transactional
     async def upload_file(self, file: UploadFile) -> str:
-        """파일을 업로드하고 파일 이름을 반환합니다."""
+        """파일을 업로드하고 식별자를 반환합니다."""
         content = await file.read()
         file_path = os.path.join(self.dir, file.filename)
         inference_file = await self.repository.save_original_file(file_path, content)
-        return inference_file.original_file_name
+        return inference_file.id
     
     @transactional
     async def update_generated_file(self, inference_file_id: int, generated_file_path: str) -> dict:
@@ -50,7 +50,7 @@ class InferenceService:
         inference_files = await self.repository.list_files()
         return [
             {
-                "id": inference_files.id,
+                "id": inference_file.id,
                 "original_file_name": inference_file.original_file_name,
                 "status": inference_file.status.value
             }

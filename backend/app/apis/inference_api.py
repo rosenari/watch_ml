@@ -18,8 +18,8 @@ async def upload_file(
     file: UploadFile = Depends(validate_inference_file),
     inference_service: InferenceService = Depends(get_inference_service)
 ):
-    original_file_name = await inference_service.upload_file(file)
-    return {"original_file_name": original_file_name}
+    inference_file_id = await inference_service.upload_file(file)
+    return {"inference_file_id": inference_file_id}
 
 
 # 추론 파일 생성

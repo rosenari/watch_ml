@@ -54,24 +54,12 @@ class DataSet(Base):
     file_meta_id = Column(Integer, ForeignKey('file_meta.id'), nullable=True)
     file_meta = relationship("FileMeta", back_populates="dataset")
 
-    parent_dataset_id = Column(Integer, ForeignKey('dataset.id'), nullable=True)
-    parent_dataset = relationship("DataSet", remote_side=[id], backref="derived_models")
-
-    __table_args__ = (
-        UniqueConstraint('parent_dataset_id', 'filename', name='uq_parent_filename'),
-    )
-
-    @property
-    def is_dir(self) -> bool:
-        return self.file_meta_id is None
-
     def serialize(self) -> dict:
         return {
             "id": self.id,
             "file_name": self.filename,
             "status": self.status.value,
             "is_delete": self.is_delete,
-            "is_dir": self.is_dir,
             "file_meta": self.file_meta.serialize() if self.file_meta else None
         }
 

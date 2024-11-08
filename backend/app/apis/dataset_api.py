@@ -13,10 +13,9 @@ router = APIRouter()
 @router.post("/upload", response_model=dict)
 async def upload_file(
     file: UploadFile = Depends(validate_zip_file), 
-    parent_id: Optional[int] = None,
     dataset_service: DataSetService = Depends(get_dataset_service)
 ):
-    result = await dataset_service.upload_file(file, parent_id=parent_id)
+    result = await dataset_service.upload_file(file)
     return {"result": result}
 
 
@@ -33,10 +32,9 @@ async def delete_file(
 # 파일 목록
 @router.get("/list", response_model=List[dict])
 async def get_file_list(
-    parent_id: Optional[int] = None,
     dataset_service: DataSetService = Depends(get_dataset_service)
 ):
-    return await dataset_service.get_file_list(parent_id=parent_id)
+    return await dataset_service.get_file_list()
 
 
 # 파일 유효성 검사 시작
@@ -53,7 +51,6 @@ async def valid_file(
 # 파일 상태 확인
 @router.get('/status', response_model=List[dict])
 async def get_valid_files(
-    parent_id: Optional[int] = None,
     dataset_service: DataSetService = Depends(get_dataset_service)
 ):
-    return await dataset_service.get_file_status(parent_id=parent_id)
+    return await dataset_service.get_file_status()

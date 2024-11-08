@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from fastapi import UploadFile, Depends
 from app.config import DATASET_DIRECTORY
 from app.database import get_redis, get_session
@@ -16,17 +16,11 @@ class DataSetService:
         self.repository = DatasetRepository(db=session)
 
     @transactional
-    async def create_dir(self, dir_name: str, parent_id: Optional[int] = None) -> bool:
-        """디렉터리를 생성하고, 디렉터리 이름을 반환합니다."""
-        await self.repository.create_dir(dir_name=dir_name, parent_id=parent_id)
-        return True
-
-    @transactional
-    async def upload_file(self, file: UploadFile, parent_id: Optional[int] = None) -> bool:
+    async def upload_file(self, file: UploadFile) -> bool:
         """파일을 업로드하고 파일 이름을 반환합니다."""
         content = await file.read()
         file_path = os.path.join(self.dir, file.filename)
-        await self.repository.save_file(file_path, content, parent_id=parent_id)
+        await self.repository.save_file(file_path, content)
         return True
 
     @transactional
@@ -35,14 +29,14 @@ class DataSetService:
         await self.repository.delete_file(dataset_id=dataset_id)
         return True
 
-    async def get_file_list(self, parent_id: Optional[int] = None) -> List[dict]:
+    async def get_file_list(self) -> List[dict]:
         """디렉터리 내 모든 파일 목록을 반환합니다."""
-        datasets = await self.repository.list_files_with_filemeta(parent_id=parent_id)
+        datasets = await self.repository.list_files_with_filemeta()
         return [dataset.serialize() for dataset in datasets]
 
-    async def get_file_status(self, parent_id: Optional[int] = None) -> List[dict]:
+    async def get_file_status(self) -> List[dict]:
         """디렉터리 내 파일들의 상태를 반환합니다 (디렉터리 제외)."""
-        datasets = await self.repository.list_files(parent_id=parent_id)
+        datasets = await self.repository.list_files()
         return [
             {"id": dataset.id, "file_name": dataset.filename, "status": dataset.status.value}
             for dataset in datasets if not dataset.is_dir

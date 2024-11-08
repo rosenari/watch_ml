@@ -22,7 +22,7 @@ class MlService:
             model_name=model_name, version=version, base_model_name=base_model_name
         ))
 
-        return id, version
+        return version
 
     @transactional
     async def register_model(self, ai_model_dto: AiModelDTO) -> int:

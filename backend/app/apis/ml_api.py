@@ -11,10 +11,10 @@ router = APIRouter()
 
 @router.post('/create', response_model=dict)
 async def create_ml_model(request: ModelCreateRequest, ml_service: MlService = Depends(get_ml_service), dataset_service: DataSetService = Depends(get_dataset_service)):
-    id, version = await ml_service.init_model(request.m_name, request.b_m_name)
+    version = await ml_service.init_model(request.m_name, request.b_m_name)
     zip_files = [await dataset_service.get_dataset_by_id(zip_file_id) for zip_file_id in request.zip_files]
-    zip_file_paths = [zip_file.file_meta.filepath for zip_file in zip_files]
-    create_model_task.delay(id, request.m_ext, version, zip_file_paths)
+    zip_file_paths = [zip_file['file_meta']['filepath'] for zip_file in zip_files]
+    create_model_task.delay(request.m_name, request.m_ext, version, zip_file_paths)
 
     return { 'result': True }
     

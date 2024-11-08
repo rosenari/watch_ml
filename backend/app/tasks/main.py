@@ -98,16 +98,18 @@ async def valid_archive(dataset_service: DataSetService, id: int):
 
 
 @app.task
-def create_model_task(model_id: str, model_ext: str, version: int, zip_file_paths: list[str]):
+def create_model_task(model_name: str, model_ext: str, version: int, zip_file_paths: list[str]):
     loop = get_event_loop()
-    return loop.run_until_complete(with_service(MlService, create_model, model_id=model_id, model_ext=model_ext, version=version, zip_file_paths=zip_file_paths))
+    return loop.run_until_complete(with_service(MlService, create_model, model_name=model_name, model_ext=model_ext, version=version, zip_file_paths=zip_file_paths))
 
 
 # zip_files를 기반으로 학습하고 생성된 모델 저장
-async def create_model(ml_service: MlService, model_id: int, model_ext: str, version: int, zip_file_paths: list[str]):
+async def create_model(ml_service: MlService, model_name: str, model_ext: str, version: int, zip_file_paths: list[str]):
     try:
         datetime_str = datetime.now().strftime("%Y%m%d%H%M%S")
-        output_dir = os.path.join(CELERY_ML_RUNS_PATH, f"{model_id}_{datetime_str}")
+        output_dir = os.path.join(CELERY_ML_RUNS_PATH, f"{model_name}_{datetime_str}")
+        model = await ml_service.get_model_by_name(model_name)
+        model_id = model['id']
         await ml_service.update_status(model_id, 'running')
         await ml_service.session.commit()  # 중간 상태 커밋
 
@@ -122,9 +124,7 @@ async def create_model(ml_service: MlService, model_id: int, model_ext: str, ver
             await ml_service.update_status(model_id, 'failed')
             return False
 
-        ai_model = await ml_service.get_model_by_id(model_id)
-        model_name = ai_model['model_name']
-        base_model_path = ai_model['base_model']['model_file']['filepath']
+        base_model_path = model['base_model']['model_file']['filepath']
         create_result, model_info = create_yolo_model(  # Yolo 학습 및 모델 생성
             model_name=model_name,
             model_ext=model_ext,

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { message, Modal, Select, Input } from 'antd';
 import { createModel } from 'api/ml';
-import { useModel } from 'hooks';
+import { useModel, useDataset } from 'hooks';
 const { Option } = Select;
 
 const ModelCreateModal = ({ isModalVisible, setIsModalVisible, selectedDatasetKeys, setSelectedDatasetKeys, reloadModelList }) => {
     const [selectedModel, setSelectedModel] = useState(null);
     const [customModelName, setCustomModelName] = useState('');
     const { modelData } = useModel();
+    const { datasetData } = useDataset();
 
     return (
         <Modal
@@ -29,7 +30,7 @@ const ModelCreateModal = ({ isModalVisible, setIsModalVisible, selectedDatasetKe
                     return;
                 }
 
-                await createModel({ modelName: customModelName, baseModelName: selectedModel, zipFileNames: selectedDatasetKeys });
+                await createModel({ modelName: customModelName, baseModelName: selectedModel, zipFileIds: selectedDatasetKeys });
             
                 setIsModalVisible(false);
                 setSelectedModel(null);
@@ -71,9 +72,10 @@ const ModelCreateModal = ({ isModalVisible, setIsModalVisible, selectedDatasetKe
             <div style={{ marginTop: '10px' }}>
                 <span style={{ fontSize: '12px', fontWeight: 'bold' }}>선택된 파일 목록:</span>
                 <ul style={{ paddingLeft: '20px', fontSize: '12px', marginTop: '5px' }}>
-                    {selectedDatasetKeys.map((fileName, index) => (
-                        <li key={index}>{fileName}</li>
-                    ))}
+                    {selectedDatasetKeys.map((datasetId, index) => {
+                        const dataset = datasetData.find(dataset => dataset.key === datasetId)
+                        return <li key={index}>{dataset.fileName}</li>
+                    })}
                 </ul>
             </div>
         </Modal>

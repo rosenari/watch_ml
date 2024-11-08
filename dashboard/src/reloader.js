@@ -5,7 +5,7 @@ import { getInferenceList, getInferenceStatus } from 'api/inference';
 
 export const formatModelList = (modelList) => {
     return modelList.map((model) => ({
-        key: model.model_name,
+        key: model.id,
         modelName: model.model_name,
         version: model.version,
         map50: model.map50 ? Number(model.map50).toFixed(2) : '-',

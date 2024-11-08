@@ -1,7 +1,7 @@
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 
-export async function createModel({ modelName, baseModelName, zipFileNames = [], modelExt = 'pt'}) {
+export async function createModel({ modelName, baseModelName, zipFileIds = [], modelExt = 'pt'}) {
     const response = await fetch(`${API_BASE_URL}/ml/create`, {
         method: 'POST',
         headers: {
@@ -10,7 +10,7 @@ export async function createModel({ modelName, baseModelName, zipFileNames = [],
         body: JSON.stringify({ 
             m_name: modelName, 
             b_m_name: baseModelName, 
-            zip_files: zipFileNames, 
+            zip_files: zipFileIds, 
             m_ext: modelExt 
         })
     });
@@ -24,14 +24,14 @@ export async function createModel({ modelName, baseModelName, zipFileNames = [],
 }
 
 
-export async function deployModel({ modelName }) {
+export async function deployModel({ modelId }) {
     const response = await fetch(`${API_BASE_URL}/ml/deploy`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-            m_name: modelName
+            m_id: modelId
         })
     });
 
@@ -44,14 +44,14 @@ export async function deployModel({ modelName }) {
 }
 
 
-export async function undeployModel({ modelName }) {
+export async function undeployModel({ modelId }) {
     const response = await fetch(`${API_BASE_URL}/ml/undeploy`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-            m_name: modelName
+            m_id: modelId
         })
     });
 

@@ -69,7 +69,7 @@ function ModelTableSection({ reloadModelList }) {
       message.warning('배포할 모델을 선택해주세요.');
     }
 
-    await deployModel({ modelName: selectedModelKeys[0] });
+    await deployModel({ modelId: selectedModelKeys[0] });
     setSelectedModelKeys([]);
 
     reloadModelList();
@@ -80,7 +80,7 @@ function ModelTableSection({ reloadModelList }) {
       message.warning('배포 해제할 모델을 선택해주세요.');
     }
 
-    await undeployModel({ modelName: selectedModelKeys[0] });
+    await undeployModel({ modelId: selectedModelKeys[0] });
     setSelectedModelKeys([]);
 
     reloadModelList();

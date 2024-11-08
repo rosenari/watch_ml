@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import logging
+import traceback
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -31,7 +32,9 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    logging.error(exc.message)
+    logging.error(f"Exception occurred: {exc}")
+    logging.error("Traceback:")
+    logging.error("".join(traceback.format_exception(None, exc, exc.__traceback__)))
 
     if isinstance(exc, NotFoundException):
         return JSONResponse(

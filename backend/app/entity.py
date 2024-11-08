@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.database import Base, async_engine
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, Enum
@@ -47,11 +47,11 @@ class DataSet(Base):
     __tablename__ = 'dataset'
 
     id = Column(Integer, primary_key=True)
-    filename = Column(String, unique=True, nullable=False)
+    filename = Column(String, nullable=False)
     status = Column(Enum(Status), nullable=False, default=Status.READY)
     is_delete = Column(Boolean, default=False)
 
-    file_meta_id = Column(Integer, ForeignKey('file_meta.id'), nullable=False)
+    file_meta_id = Column(Integer, ForeignKey('file_meta.id'), nullable=True)
     file_meta = relationship("FileMeta", back_populates="dataset")
 
     def serialize(self) -> dict:
@@ -60,7 +60,7 @@ class DataSet(Base):
             "file_name": self.filename,
             "status": self.status.value,
             "is_delete": self.is_delete,
-            "file_meta": self.file_meta.serialize() if self.file_meta else None,
+            "file_meta": self.file_meta.serialize() if self.file_meta else None
         }
 
 

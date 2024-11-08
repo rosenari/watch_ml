@@ -5,7 +5,7 @@ import { getInferenceList, getInferenceStatus } from 'api/inference';
 
 export const formatModelList = (modelList) => {
     return modelList.map((model) => ({
-        key: model.model_name,
+        key: model.id,
         modelName: model.model_name,
         version: model.version,
         map50: model.map50 ? Number(model.map50).toFixed(2) : '-',
@@ -23,7 +23,7 @@ export const loadDatasetList = async (setDatasetData, startPolling, stopExecutio
   try {
     const datasetList = await getDatasetList();
     const formattedList = datasetList.map((dataset) => ({
-      key: dataset.file_name,
+      key: dataset.id,
       fileName: dataset.file_name,
       uploadDate: dataset.file_meta.creation_time,
       fileSize: dataset.file_meta.filesize,
@@ -117,9 +117,11 @@ export const pollModelStatus = async (setModelData, stopExecution, state) => {
   
   export const formatInferenceList = (inferenceList) => {
     return inferenceList.map((inference) => ({
-      key: inference.original_file_name,
+      key: inference.id,
+      originalFileId: inference.original_file ? inference.original_file.id : '-',
       originalFileName: inference.original_file_name,
       originalFileSize: inference.original_file.filesize,
+      generatedFileId: inference.generated_file ? inference.generated_file.id : '-',
       generatedFileName: inference.generated_file_name ?? '-',
       generatedFileSize: inference.generated_file ? inference.generated_file.filesize : '-',
       fileType: inference.file_type,

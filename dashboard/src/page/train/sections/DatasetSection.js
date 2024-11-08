@@ -52,15 +52,19 @@ function DatasetSection({ reloadDatasetList, reloadModelList }) {
       message.warning('삭제할 파일을 지정하지 않았습니다.');
     }
 
-    for (const fileName of selectedDatasetKeys) {
+    for (const datasetId of selectedDatasetKeys) {
+      const dataset = datasetData.find(dataset => dataset.key === datasetId);
+      const fileName = dataset.fileName;
+    
       try {
-        const result = await deleteDataset(fileName);
+        const result = await deleteDataset(datasetId);
         result ? message.success(`${fileName} 삭제 성공`) : message.error(`${fileName} 삭제 실패`);
       } catch (error) {
         message.error(`${fileName} 삭제 실패`);
       }
     }
-
+    
+    setSelectedDatasetKeys([]);
     reloadDatasetList();
   };
 

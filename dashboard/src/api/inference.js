@@ -19,15 +19,15 @@ export async function originalFileUpload(file) {
 }
 
 
-export async function generateInferenceFile({ originalFileName, modelName }) {
+export async function generateInferenceFile({ inferenceFileId, modelId }) {
     const response = await fetch(`${API_BASE_URL}/inference/generate`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-            original_file_name: originalFileName,
-            m_name: modelName
+            inference_file_id: inferenceFileId,
+            m_id: modelId
         })
     });
 
@@ -40,8 +40,8 @@ export async function generateInferenceFile({ originalFileName, modelName }) {
 }
 
 
-export async function deleteOriginalFile(originalFileName) {
-    const response = await fetch(`${API_BASE_URL}/inference/${originalFileName}`, {
+export async function deleteOriginalFile(inferenceFileId) {
+    const response = await fetch(`${API_BASE_URL}/inference/${inferenceFileId}`, {
         method: 'DELETE'
     });
 
@@ -77,6 +77,6 @@ export async function getInferenceStatus() {
 }
 
 
-export function downloadFileLink(filename) {
-    return `${API_BASE_URL}/inference/download/${filename}`
+export function downloadFileLink(fileId) {
+    return `${API_BASE_URL}/inference/download/${fileId}`
 }

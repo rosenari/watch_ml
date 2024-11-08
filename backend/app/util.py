@@ -1,4 +1,5 @@
-from app.config import PHOTO_EXTENSIONS, VIDEO_EXTENSIONS
+from sqlalchemy.ext.asyncio import AsyncSession
+import inspect
 
 
 # 파일 크기를 적절한 단위(byte, KB, MB, GB)로 변환
@@ -16,10 +17,14 @@ def format_file_size(size_in_bytes: int) -> str:
 
 def transactional(func):
     async def wrapper(self, *args, **kwargs):
-        session = getattr(self, 'session', None)
+        # self 객체에서 AsyncSession 타입의 속성을 찾음
+        session = next(
+            (value for _, value in inspect.getmembers(self) if isinstance(value, AsyncSession)),
+            None
+        )
 
         if session is None:
-            raise ValueError("Session not provided")
+            raise ValueError("AsyncSession 타입의 세션이 제공되지 않았습니다.")
 
         if session.in_transaction():
             return await func(self, *args, **kwargs)
@@ -27,7 +32,7 @@ def transactional(func):
         async with session.begin():
             try:
                 return await func(self, *args, **kwargs)
-            except Exception as e:
+            except Exception:
                 await session.rollback()
                 raise
 

@@ -18,27 +18,35 @@ class MlService:
     async def init_model(self, model_name: str, base_model_name: str = None) -> int:
         model = await self.repository.get_model_by_name(model_name)
         version = 1 if model is None else (model.version if model.status == Status.FAILED else model.version + 1)
-        await self.register_model(AiModelDTO(
+        id = await self.register_model(AiModelDTO(
             model_name=model_name, version=version, base_model_name=base_model_name
         ))
 
         return version
 
     @transactional
-    async def register_model(self, ai_model_dto: AiModelDTO) -> str:
+    async def register_model(self, ai_model_dto: AiModelDTO) -> int:
         if ai_model_dto.base_model_name is not None:
             base_model = await self.repository.get_model_by_name(ai_model_dto.base_model_name)
             if base_model.status != Status.COMPLETE:
                 raise ForbiddenException(f"Base model '{ai_model_dto.base_model_name}' is not complete and cannot be used.")
         
         new_model = await self.repository.register_model(ai_model_dto)
-        return new_model.modelname
+        return new_model.id
     
     @transactional
     async def update_model(self, ai_model_dto: AiModelDTO) -> str:
         update_model = await self.repository.update_model(ai_model_dto)
         return update_model.modelname
 
+    async def get_model_by_id(self, model_id: int) -> dict:
+        model = await self.repository.get_model_by_id_with_filemeta(model_id)
+
+        if model is None:
+            return model
+
+        return model.serialize()
+    
     async def get_model_by_name(self, model_name: str) -> dict:
         model = await self.repository.get_model_by_name_with_filemeta(model_name)
 
@@ -62,35 +70,36 @@ class MlService:
             status = redis_status_map.get(model.modelname, model.status.value)
 
             result.append({
+                "id": model.id,
                 "model_name": model.modelname,
                 "status": status
             })
 
         return result
     
-    async def get_model_classes(self, model_name: str) -> List[str]:
-        model = await self.repository.get_model_by_name(model_name)
+    async def get_model_classes(self, model_id: int) -> List[str]:
+        model = await self.repository.get_model_by_id(model_id)
         return model.classes.split(',') if model and model.classes else None
 
     @transactional
-    async def delete_model(self, model_name: str) -> None:
-        return await self.repository.delete_model(model_name)
+    async def delete_model(self, model_id: int) -> None:
+        return await self.repository.delete_model(model_id=model_id)
 
     @transactional
-    async def deploy_model(self, model_name: str, deploy_path: str) -> str:
-        model = await self.repository.deploy_model(model_name, deploy_path)
+    async def deploy_model(self, model_id: int, deploy_path: str) -> str:
+        model = await self.repository.deploy_model(model_id, deploy_path)
         return model.modelname
     
     @transactional
-    async def undeploy_model(self, model_name: str) -> str:
-        model = await self.repository.undeploy_model(model_name)
+    async def undeploy_model(self, model_id: int) -> str:
+        model = await self.repository.undeploy_model(model_id)
         return model.modelname
     
     @transactional
-    async def update_status(self, model_name: str, status: str):
+    async def update_status(self, model_id: str, status: str):
         new_status = Status[status.upper()]
 
-        return await self.repository.update_status(model_name, new_status)
+        return await self.repository.update_status(model_id, new_status)
         
 
 async def get_ml_service(redis=Depends(get_redis), session=Depends(get_session)):

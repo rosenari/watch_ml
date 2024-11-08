@@ -187,7 +187,7 @@ async def test_delete_model(ml_service: MlService, temp_model: str):
     precision = 0.8
     recall = 0.9
 
-    await ml_service.register_model(AiModelDTO(
+    model_id = await ml_service.register_model(AiModelDTO(
         model_name=model_name,
         version=version,
         model_path=model_path,
@@ -196,7 +196,7 @@ async def test_delete_model(ml_service: MlService, temp_model: str):
         precision=precision,
         recall=recall
     ))
-    await ml_service.delete_model(model_name)
+    await ml_service.delete_model(model_id)
 
     model_list = await ml_service.get_model_list()
     model_names = [model['model_name'] for model in model_list]
@@ -236,12 +236,12 @@ async def test_get_model_list(ml_service: MlService, temp_directory): # 여기�
 async def test_get_model_classes(ml_service: MlService):
     model_name = 'test_model'
     classes = ['truck', 'bus']
-    await ml_service.register_model(AiModelDTO(
+    model_id = await ml_service.register_model(AiModelDTO(
         model_name=model_name,
         classes=classes
     ))
 
-    model_classes = await ml_service.get_model_classes(model_name)
+    model_classes = await ml_service.get_model_classes(model_id)
 
     assert classes == model_classes, f"Model classes was not registered to {classes}."
 
@@ -250,10 +250,10 @@ async def test_get_model_classes(ml_service: MlService):
 async def test_update_status(ml_service: MlService):
     model_name = 'temp_model'
 
-    await ml_service.register_model(AiModelDTO(
+    model_id = await ml_service.register_model(AiModelDTO(
         model_name=model_name
     ))
-    await ml_service.update_status(model_name, "running")
+    await ml_service.update_status(model_id, "running")
 
     model_list = await ml_service.get_model_status()
     updated_model = next((model for model in model_list if model['model_name'] == model_name), None)

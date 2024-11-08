@@ -31,8 +31,8 @@ export async function getDatasetList() {
 }
 
 
-export async function deleteDataset(fileName) {
-    const response = await fetch(`${API_BASE_URL}/dataset/${fileName}`, {
+export async function deleteDataset(datasetId) {
+    const response = await fetch(`${API_BASE_URL}/dataset/${datasetId}`, {
         method: 'DELETE'
     });
 
@@ -44,14 +44,14 @@ export async function deleteDataset(fileName) {
 }
 
 
-export async function validDataset(fileNames) {
-    const requests = fileNames.map(fileName => 
+export async function validDataset(datasetIds) {
+    const requests = datasetIds.map(datasetId => 
         fetch(`${API_BASE_URL}/dataset/validation`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ file_name: fileName })
+            body: JSON.stringify({ dataset_id: datasetId })
         })
     );
 

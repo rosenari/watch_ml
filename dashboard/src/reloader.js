@@ -23,7 +23,7 @@ export const loadDatasetList = async (setDatasetData, startPolling, stopExecutio
   try {
     const datasetList = await getDatasetList();
     const formattedList = datasetList.map((dataset) => ({
-      key: dataset.file_name,
+      key: dataset.id,
       fileName: dataset.file_name,
       uploadDate: dataset.file_meta.creation_time,
       fileSize: dataset.file_meta.filesize,

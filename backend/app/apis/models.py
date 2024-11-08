@@ -23,4 +23,4 @@ class ModelCreateRequest(BaseModel):
 
 class InferenceGenerateRequest(BaseModel):
     inference_file_id: int  # InferenceFile ID
-    m_name: str  # 모델 이름
+    m_id: int 

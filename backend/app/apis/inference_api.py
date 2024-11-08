@@ -30,8 +30,9 @@ async def generate_inference_file(
     ml_service: MlService = Depends(get_ml_service)
 ):
     await inference_service.update_status(request.inference_file_id, 'pending')
-    classes = await ml_service.get_model_classes(request.m_name)
-    generate_inference_task.delay(request.inference_file_id, request.m_name, classes)
+    classes = await ml_service.get_model_classes(request.m_id)
+    model_name = await ml_service.get_model_by_id(request.m_id)
+    generate_inference_task.delay(request.inference_file_id, model_name, classes)
     return {'result': True}
 
 

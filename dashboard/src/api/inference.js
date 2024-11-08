@@ -77,6 +77,6 @@ export async function getInferenceStatus() {
 }
 
 
-export function downloadFileLink(inferenceFileId) {
-    return `${API_BASE_URL}/inference/download/${inferenceFileId}`
+export function downloadFileLink(fileId) {
+    return `${API_BASE_URL}/inference/download/${fileId}`
 }

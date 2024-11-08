@@ -61,7 +61,7 @@ function InferenceSection({ reloadInferenceList }) {
 
     for (const inferenceFileId of selectedInferenceKeys) {
       const result = await deleteOriginalFile(inferenceFileId);
-      const inferenceFile = inferenceData.find(inference => inference.id === inferenceFileId);
+      const inferenceFile = inferenceData.find(inference => inference.key === inferenceFileId);
       const fileName = inferenceFile.fileName;
       try {
         result ? message.success(`${fileName} 삭제 성공`) : message.error(`${fileName} 삭제 실패`);
@@ -70,8 +70,8 @@ function InferenceSection({ reloadInferenceList }) {
       }
     }
 
-    reloadInferenceList();
     setSelectedInferenceKeys([]);
+    reloadInferenceList();
   };
 
   const handleGenerateInferenceFile = async () => {
@@ -109,7 +109,7 @@ function InferenceSection({ reloadInferenceList }) {
       render: (text, record) => (
         <div>
           <span style={{ marginRight: '8px' }}>{text}</span>
-          <a href={downloadFileLink(record.originalFileName)} download>
+          <a href={downloadFileLink(record.originalFileId)} download>
             <DownloadOutlined style={{ marginRight: 8 }} />
           </a>
           {record.status === 'failed' && <ExclamationCircleOutlined style={{ color: 'red', marginRight: 8 }} />}
@@ -126,16 +126,16 @@ function InferenceSection({ reloadInferenceList }) {
       title: '추론파일',
       dataIndex: 'generatedFileName',
       key: 'generatedFileName',
-      render: (text, record) => (
-        <div>
+      render: (text, record) => {
+        return <div>
           <span style={{ marginRight: '8px' }}>{text}</span>
           {record.generatedFileName !== '-' && (
-            <a href={downloadFileLink(record.generatedFileName)} download>
+            <a href={downloadFileLink(record.generatedFileId)} download>
               <DownloadOutlined style={{ marginRight: 8 }} />
             </a>
           )}
         </div>
-      ),
+      },
     },
     {
       title: '추론파일 크기',

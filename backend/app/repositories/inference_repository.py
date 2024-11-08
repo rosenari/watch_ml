@@ -127,26 +127,28 @@ class InferenceRepository:
         inference_file.status = new_status
         await self.db.flush()
 
-    async def get_file_path(self, inference_file_id: int) -> str:
-        """InferenceFile의 파일 경로를 반환합니다."""
+    async def get_file_path(self, file_id: int) -> str:
         result = await self.db.execute(
             select(InferenceFile)
             .options(
                 joinedload(InferenceFile.original_file),
                 joinedload(InferenceFile.generated_file)
             )
-            .filter(InferenceFile.id == inference_file_id)
+            .where(
+                (InferenceFile.original_file_id == file_id) |
+                (InferenceFile.generated_file_id == file_id)
+            )
         )
-        
         inference_file = result.scalars().first()
-        
+
         if inference_file:
-            if inference_file.original_file:
+            if inference_file.original_file and inference_file.original_file.id == file_id:
                 return inference_file.original_file.filepath
-            elif inference_file.generated_file:
+            elif inference_file.generated_file and inference_file.generated_file.id == file_id:
                 return inference_file.generated_file.filepath
-        
-        raise NotFoundException("get_file_path: File not found")
+
+        raise NotFoundException(f"File with id {file_id} not found in both original and generated files.")
+
 
 
 def get_file_type(file_name: str) -> Union[FileType, None]:

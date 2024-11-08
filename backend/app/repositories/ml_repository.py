@@ -206,8 +206,7 @@ async def create_base_model():
                     model_path=base_model['model_path'],
                     classes=base_model['classes']
                 )
-                await ml_repo.register_model(ai_model_dto)
-                model = ml_repo.get_model_by_name(ai_model_dto.model_name)
+                model = await ml_repo.register_model(ai_model_dto)
                 await ml_repo.update_status(model.id, Status.COMPLETE)
             await session_instance.commit()
         except Exception as e:

@@ -21,7 +21,7 @@ class InferenceService:
         content = await file.read()
         file_path = os.path.join(self.dir, file.filename)
         inference_file = await self.repository.save_original_file(file_path, content)
-        return inference_file.id
+        return { "original_file_name": inference_file.original_file_name, "id": inference_file.id }
     
     @transactional
     async def update_generated_file(self, inference_file_id: int, generated_file_path: str) -> dict:
@@ -64,9 +64,9 @@ class InferenceService:
         await self.repository.update_status(inference_file_id, new_status)
         return True
     
-    async def get_file_path(self, inference_file_id: int) -> str:
+    async def get_file_path(self, file_id: int) -> str:
         """ID로 InferenceFile의 파일 경로를 반환합니다."""
-        return await self.repository.get_file_path(inference_file_id)
+        return await self.repository.get_file_path(file_id)
     
 
 async def get_inference_service(redis=Depends(get_redis), session=Depends(get_session)):

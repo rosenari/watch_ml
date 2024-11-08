@@ -17,6 +17,7 @@ import asyncio
 import redis
 from datetime import datetime
 import logging
+import traceback
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -82,14 +83,13 @@ async def valid_archive(dataset_service: DataSetService, id: int):
     try: 
         dataset = await dataset_service.get_dataset_by_id(id)
         zip_path = dataset['file_meta']['filepath']
-        file_name = os.path.basename(zip_path)
-        await dataset_service.update_status(file_name, 'running')
+        await dataset_service.update_status(id, 'running')
         await dataset_service.session.commit()
 
         result = parse_and_verify_zip(zip_path)
         status = "complete" if result else "failed"
 
-        await dataset_service.update_status(file_name, status) 
+        await dataset_service.update_status(id, status) 
 
         return result
     except Exception as e:
@@ -221,8 +221,8 @@ async def generate_inference(inference_service: InferenceService, inference_file
         file_type = file['file_type']
         generate_file_path = None
 
-        if file_type == FileType.PHOTO or file_type == FileType.VIDEO:
-            generate_file_path = generate_inference_file(file_type.value, original_file_path, model_name, classes)
+        if file_type == FileType.PHOTO.value or file_type == FileType.VIDEO.value:
+            generate_file_path = generate_inference_file(file_type, original_file_path, model_name, classes)
         else:
             await inference_service.update_status(inference_file_id, 'failed')
             return False
@@ -233,4 +233,6 @@ async def generate_inference(inference_service: InferenceService, inference_file
         return True
     except Exception as e:
         logging.error(f"Unexpected Error in generate_inference task: {e}")
+        logging.error("Traceback:")
+        logging.error("".join(traceback.format_exception(None, e, e.__traceback__)))
         return False

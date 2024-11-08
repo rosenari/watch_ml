@@ -22,7 +22,7 @@ class DataSetService:
         file_path = os.path.join(self.dir, file.filename)
         dataset = await self.repository.save_file(file_path, content)
 
-        return dataset.id
+        return { "file_name": dataset.filename, "id": dataset.id }
 
     @transactional
     async def delete_file(self, dataset_id: int) -> bool:

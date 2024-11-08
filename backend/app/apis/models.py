@@ -7,7 +7,7 @@ class FileValidationRequest(BaseModel):
 
 
 class ModelDeployRequest(BaseModel):
-    m_id: str  # 모델 이름
+    m_id: int  # 모델 이름
 
 
 class ModelCreateRequest(BaseModel):

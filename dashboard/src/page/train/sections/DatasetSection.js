@@ -63,7 +63,8 @@ function DatasetSection({ reloadDatasetList, reloadModelList }) {
         message.error(`${fileName} 삭제 실패`);
       }
     }
-
+    
+    setSelectedDatasetKeys([]);
     reloadDatasetList();
   };
 

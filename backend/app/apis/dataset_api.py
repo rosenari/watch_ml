@@ -15,8 +15,7 @@ async def upload_file(
     file: UploadFile = Depends(validate_zip_file), 
     dataset_service: DataSetService = Depends(get_dataset_service)
 ):
-    dataset_id = await dataset_service.upload_file(file)
-    return { "dataset_id" : dataset_id }
+    return await dataset_service.upload_file(file)
 
 
 # 파일 삭제

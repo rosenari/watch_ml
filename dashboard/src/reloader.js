@@ -118,8 +118,10 @@ export const pollModelStatus = async (setModelData, stopExecution, state) => {
   export const formatInferenceList = (inferenceList) => {
     return inferenceList.map((inference) => ({
       key: inference.id,
+      originalFileId: inference.original_file ? inference.original_file.id : '-',
       originalFileName: inference.original_file_name,
       originalFileSize: inference.original_file.filesize,
+      generatedFileId: inference.generated_file ? inference.generated_file.id : '-',
       generatedFileName: inference.generated_file_name ?? '-',
       generatedFileSize: inference.generated_file ? inference.generated_file.filesize : '-',
       fileType: inference.file_type,

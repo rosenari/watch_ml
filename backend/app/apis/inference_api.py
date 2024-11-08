@@ -18,8 +18,7 @@ async def upload_file(
     file: UploadFile = Depends(validate_inference_file),
     inference_service: InferenceService = Depends(get_inference_service)
 ):
-    inference_file_id = await inference_service.upload_file(file)
-    return {"inference_file_id": inference_file_id}
+    return await inference_service.upload_file(file)
 
 
 # 추론 파일 생성
@@ -31,7 +30,8 @@ async def generate_inference_file(
 ):
     await inference_service.update_status(request.inference_file_id, 'pending')
     classes = await ml_service.get_model_classes(request.m_id)
-    model_name = await ml_service.get_model_by_id(request.m_id)
+    model = await ml_service.get_model_by_id(request.m_id)
+    model_name = model['model_name']
     generate_inference_task.delay(request.inference_file_id, model_name, classes)
     return {'result': True}
 
@@ -43,7 +43,7 @@ async def delete_file(
     inference_service: InferenceService = Depends(get_inference_service)
 ):
     await inference_service.delete_file(inference_file_id)
-    return {"inference_file_id": inference_file_id}
+    return {'result': True}
 
 
 # 파일 목록
@@ -59,12 +59,12 @@ async def get_file_status(inference_service: InferenceService = Depends(get_infe
 
 
 # 파일 다운로드
-@router.get("/download/{inference_file_id}")
+@router.get("/download/{file_id}")
 async def download_file(
-    inference_file_id: int,
+    file_id: int,
     inference_service: InferenceService = Depends(get_inference_service)
 ):
-    file_path = await inference_service.get_file_path(inference_file_id)
+    file_path = await inference_service.get_file_path(file_id)
 
     # 파일 응답 반환
     return FileResponse(path=file_path, filename=os.path.basename(file_path), media_type='application/octet-stream')

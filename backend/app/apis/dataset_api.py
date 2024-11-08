@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, Depends
-from typing import List, Optional
+from typing import List
 from app.apis.models import FileValidationRequest
 from app.validation import validate_zip_file
 from app.tasks.main import valid_archive_task
@@ -15,8 +15,8 @@ async def upload_file(
     file: UploadFile = Depends(validate_zip_file), 
     dataset_service: DataSetService = Depends(get_dataset_service)
 ):
-    result = await dataset_service.upload_file(file)
-    return {"result": result}
+    dataset_id = await dataset_service.upload_file(file)
+    return { "dataset_id" : dataset_id }
 
 
 # 파일 삭제

@@ -16,12 +16,13 @@ class DataSetService:
         self.repository = DatasetRepository(db=session)
 
     @transactional
-    async def upload_file(self, file: UploadFile) -> bool:
-        """파일을 업로드하고 파일 이름을 반환합니다."""
+    async def upload_file(self, file: UploadFile) -> int:
+        """파일을 업로드하고 식별자를 반환합니다."""
         content = await file.read()
         file_path = os.path.join(self.dir, file.filename)
-        await self.repository.save_file(file_path, content)
-        return True
+        dataset = await self.repository.save_file(file_path, content)
+
+        return dataset.id
 
     @transactional
     async def delete_file(self, dataset_id: int) -> bool:
@@ -39,7 +40,7 @@ class DataSetService:
         datasets = await self.repository.list_files()
         return [
             {"id": dataset.id, "file_name": dataset.filename, "status": dataset.status.value}
-            for dataset in datasets if not dataset.is_dir
+            for dataset in datasets
         ]
     
     async def get_dataset_by_id(self, id: int) -> dict:

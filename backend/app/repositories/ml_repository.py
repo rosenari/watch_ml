@@ -177,6 +177,13 @@ class MlRepository:
         model.status = new_status
         await self.db.flush()
 
+    async def model_exists(self, model_name: str) -> bool:
+        """Check if a model with the given name already exists."""
+        result = await self.db.execute(
+            select(AiModel).where(AiModel.modelname == model_name)
+        )
+        return result.scalars().first() is not None
+
 
 async def create_base_model():
     async for session_instance in get_session():
@@ -200,6 +207,9 @@ async def create_base_model():
                 }
             ]
             for base_model in base_model_list:
+                if await ml_repo.model_exists(base_model['model_name']):
+                    continue
+
                 ai_model_dto = AiModelDTO(
                     model_name=base_model['model_name'],
                     version=1,

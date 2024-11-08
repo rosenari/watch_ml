@@ -59,9 +59,11 @@ function InferenceSection({ reloadInferenceList }) {
       message.warning('삭제할 파일을 지정하지 않았습니다.');
     }
 
-    for (const fileName of selectedInferenceKeys) {
+    for (const inferenceFileId of selectedInferenceKeys) {
+      const result = await deleteOriginalFile(inferenceFileId);
+      const inferenceFile = inferenceData.find(inference => inference.id === inferenceFileId);
+      const fileName = inferenceFile.fileName;
       try {
-        const result = await deleteOriginalFile(fileName);
         result ? message.success(`${fileName} 삭제 성공`) : message.error(`${fileName} 삭제 실패`);
       } catch (error) {
         message.error(`${fileName} 삭제 실패`);
@@ -78,12 +80,12 @@ function InferenceSection({ reloadInferenceList }) {
       return;
     }
 
-    if (!selectedModel) {
+    if (selectedModel == null) {
       message.warning('추론 모델을 선택해주세요.');
       return;
     }
 
-    await generateInferenceFile({ originalFileName: selectedInferenceKeys[0], modelName: selectedModel });
+    await generateInferenceFile({ inferenceFileId: selectedInferenceKeys[0], modelId: selectedModel });
 
     reloadInferenceList();
     setSelectedInferenceKeys([]);
@@ -176,7 +178,7 @@ function InferenceSection({ reloadInferenceList }) {
               onChange={(value) => setSelectedModel(value)}
             >
               {modelList.filter((model) => model.status === 'complete' && model.is_deploy === true).map((model) => (
-                    <Option key={model.model_name} value={model.model_name}>
+                    <Option key={model.id} value={model.id}>
                         {model.model_name}
                     </Option>
               ))}

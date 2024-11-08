@@ -3,17 +3,18 @@ from typing import Optional, List
 
 
 class FileValidationRequest(BaseModel):
-    file_name: str
+    dataset_id: int
 
 
 class ModelDeployRequest(BaseModel):
-    m_name: str  # model_name
+    m_id: str  # 모델 이름
 
 
-class ModelCreateRequest(ModelDeployRequest):
-    m_ext: Optional[str] = 'pt' # model_ext
-    b_m_name: Optional[str] = None  # base_model_name
-    zip_files: List[str]
+class ModelCreateRequest(BaseModel):
+    m_ext: Optional[str] = 'pt'  # 모델 확장자
+    m_name: str
+    b_m_name: Optional[str] = None  # 베이스 모델 이름
+    zip_files: List[int]
 
     @property
     def file_name(self) -> str:
@@ -21,5 +22,5 @@ class ModelCreateRequest(ModelDeployRequest):
     
 
 class InferenceGenerateRequest(BaseModel):
-    original_file_name: str
-    m_name: str
+    inference_file_id: int  # InferenceFile ID
+    m_name: str  # 모델 이름

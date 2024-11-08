@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.database import Base, async_engine
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, Enum
@@ -47,13 +47,21 @@ class DataSet(Base):
     __tablename__ = 'dataset'
 
     id = Column(Integer, primary_key=True)
-    filename = Column(String, unique=True, nullable=False)
+    filename = Column(String, nullable=False)
     status = Column(Enum(Status), nullable=False, default=Status.READY)
     is_delete = Column(Boolean, default=False)
 
     file_meta_id = Column(Integer, ForeignKey('file_meta.id'), nullable=True)
     file_meta = relationship("FileMeta", back_populates="dataset")
 
+    parent_dataset_id = Column(Integer, ForeignKey('dataset.id'), nullable=True)
+    parent_dataset = relationship("DataSet", remote_side=[id], backref="derived_models")
+
+    __table_args__ = (
+        UniqueConstraint('parent_dataset_id', 'filename', name='uq_parent_filename'),
+    )
+
+    @property
     def is_dir(self) -> bool:
         return self.file_meta_id is None
 
@@ -63,7 +71,8 @@ class DataSet(Base):
             "file_name": self.filename,
             "status": self.status.value,
             "is_delete": self.is_delete,
-            "file_meta": self.file_meta.serialize() if self.file_meta else None,
+            "is_dir": self.is_dir,
+            "file_meta": self.file_meta.serialize() if self.file_meta else None
         }
 
 

@@ -26,13 +26,8 @@ export function useDataset() {
 
 
 export function useInference() {
-    const [inferenceData, _setInferenceData]  = useAtom(inferenceAtom);
-    const setInferenceData = useCallback((newData) => {
-        _setInferenceData(newData);
-        state.inference = [...newData];
-    }, [_setInferenceData]);
-
-    return {inferenceData, setInferenceData, state};
+    const [inferenceData, setInferenceData] = useAtom(inferenceAtom);
+    return {inferenceData, setInferenceData};
 }
 
 

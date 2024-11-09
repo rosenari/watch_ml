@@ -1,60 +1,86 @@
-// FileUploadSection.js
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useInfiniteQuery, useQuery } from 'react-query';
 import { Upload, Table, Button, message, Spin, Select } from 'antd';
 import { useInView } from 'react-intersection-observer';
-import { FileImageOutlined, LoadingOutlined, ExclamationCircleOutlined, DownloadOutlined  } from '@ant-design/icons';
-import { originalFileUpload, generateInferenceFile, deleteOriginalFile, downloadFileLink } from 'api/inference';
+import { FileImageOutlined, LoadingOutlined, ExclamationCircleOutlined, DownloadOutlined } from '@ant-design/icons';
+import { originalFileUpload, generateInferenceFile, deleteOriginalFile, downloadFileLink, getInferenceList, getInferenceStatus } from 'api/inference';
+import { getModelList } from 'api/ml';
 import { useInference } from 'hooks';
 import { formatInferenceList } from 'reloader';
-import { getModelList } from 'api/ml';
-import { getInferenceList } from 'api/inference';
-import "./InferenceSection.css";
+import './InferenceSection.css';
 
 const { Dragger } = Upload;
 const { Option } = Select;
 
-function InferenceSection({ reloadInferenceList }) {
+function InferenceSection() {
   const { inferenceData, setInferenceData } = useInference();
-  const [ selectedInferenceKeys, setSelectedInferenceKeys] = useState([]);
-  const [ fileList, setFileList] = useState([]);
-  const [selectedModel, setSelectedModel] = useState(null);
-  const [ modelList, setModelList] = useState([]);
-  const [hasMore, setHasMore] = useState(true); 
+  const [selectedInferenceKeys, setSelectedInferenceKeys] = useState([]);
+  const [fileList, setFileList] = useState([]);
+  const [selectedModel, setSelectedModelId] = useState(null);
+  const [ pollEnabled, setPollEnabled ] = useState(true);
   const [ref, inView] = useInView();
+  // 배포된 모델 정보 가져오기
+  const { data: modelList, isLoading: isModelLoading } = useQuery(
+    'modelList',
+    getModelList,
+    {
+      select: (data) => data.filter((model) => model.status === 'complete' && model.is_deploy),
+    }
+  );
+
+  // 무한 스크롤
+  const {
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch
+  } = useInfiniteQuery(
+    'inferenceList',
+    ({ pageParam = null }) => getInferenceList(pageParam),
+    {
+      getNextPageParam: (lastPage) => {
+        return lastPage.length ? lastPage[lastPage.length - 1].id : undefined;
+      },
+      onSuccess: (data) => {
+        setTimeout(() => {
+          const formattedData = data.pages.flatMap(formatInferenceList);
+          setInferenceData(formattedData);
+        });
+      },
+      cacheTime: 0,
+      staleTime: 0,
+    }
+  );
+
   
-  const loadMoreData = useCallback(async (lastId) => {
-    if (!hasMore) return;
-
-    const newData = await getInferenceList(lastId);
-    if (newData.length === 0) {
-      setHasMore(false); // 빈 배열이면 더 이상 로드하지 않음
-      return;
-    }
-
-    setInferenceData([
-      ...inferenceData,
-      ...formatInferenceList(newData),
-    ]);
-
-    return newData.length ? newData[newData.length - 1].id : null;
-  }, [hasMore, setInferenceData, inferenceData]);
-
   useEffect(() => {
-    if (inView && hasMore) {
-      const lastId = inferenceData.length ? inferenceData[inferenceData.length - 1].key : null;
-      loadMoreData(lastId);
+    if (inView && hasNextPage) {
+      fetchNextPage();
     }
-  }, [inView, hasMore, inferenceData, loadMoreData]);
+  }, [inView, hasNextPage, fetchNextPage]);
 
-  useEffect(() => {
-    reloadInferenceList();
-    reloadModelList();
-  }, [reloadInferenceList]);
-
-  const reloadModelList = async () => {
-    setModelList(await getModelList());
-  }
+  // 상태 갱신 폴링
+  useQuery(
+    ['inferenceStatus'],
+    getInferenceStatus,
+    {
+      refetchInterval: pollEnabled ? 500 : false, // 0.5초마다 폴링
+      onSuccess: (newStatusData) => {
+        console.log(inferenceData);
+        const updatedData = inferenceData.map((item) => ({
+          ...item,
+          status: newStatusData.find((status) => status.id === item.key)?.status || item.status,
+        }));
+        setInferenceData(updatedData);
+        if(!updatedData.some((item) => item.status === 'running' || item.status === 'pending')) {
+          setPollEnabled(false);
+          refetch();
+        }
+      },
+      cacheTime: 0,
+      staleTime: 0,
+    }
+  );
 
   const handleUpload = async () => {
     if (fileList.length === 0) {
@@ -69,7 +95,7 @@ function InferenceSection({ reloadInferenceList }) {
           throw new Error('정상적으로 업로드 되지 않음.');
         }
         message.success(`${file.name} 업로드 성공`);
-        reloadInferenceList();
+        refetch();
       } catch (error) {
         console.error(error);
         message.error(`${file.name} 업로드 실패`);
@@ -79,28 +105,32 @@ function InferenceSection({ reloadInferenceList }) {
   };
 
   const handleReset = () => {
-    setFileList([]); 
+    setFileList([]);
     message.success('파일 목록이 초기화되었습니다.');
   };
 
   const handleDelete = async () => {
     if (selectedInferenceKeys.length === 0) {
       message.warning('삭제할 파일을 지정하지 않았습니다.');
+      return;
     }
 
     for (const inferenceFileId of selectedInferenceKeys) {
-      const result = await deleteOriginalFile(inferenceFileId);
-      const inferenceFile = inferenceData.find(inference => inference.key === inferenceFileId);
-      const fileName = inferenceFile.fileName;
       try {
-        result ? message.success(`${fileName} 삭제 성공`) : message.error(`${fileName} 삭제 실패`);
+        const result = await deleteOriginalFile(inferenceFileId);
+        const inferenceFile = inferenceData.find((inference) => inference.key === inferenceFileId);
+        const fileName = inferenceFile.fileName;
+        if (result) {
+          message.success(`${fileName} 삭제 성공`);
+          refetch(); 
+        } else {
+          message.error(`${fileName} 삭제 실패`);
+        }
       } catch (error) {
-        message.error(`${fileName} 삭제 실패`);
+        message.error('삭제 중 오류 발생');
       }
     }
-
     setSelectedInferenceKeys([]);
-    reloadInferenceList();
   };
 
   const handleGenerateInferenceFile = async () => {
@@ -114,17 +144,22 @@ function InferenceSection({ reloadInferenceList }) {
       return;
     }
 
-    await generateInferenceFile({ inferenceFileId: selectedInferenceKeys[0], modelId: selectedModel });
-
-    reloadInferenceList();
+    try {
+      await generateInferenceFile({ inferenceFileId: selectedInferenceKeys[0], modelId: selectedModel });
+      message.success('추론 요청 성공');
+      setPollEnabled(true);
+    } catch (error) {
+      console.log(error);
+      message.error('추론 요청 실패');
+    }
     setSelectedInferenceKeys([]);
-  }
+  };
 
   const uploadProps = {
     multiple: true,
     beforeUpload: (file) => {
       setFileList((prevList) => [...prevList, file]);
-      return false; 
+      return false;
     },
     fileList,
     onRemove: (file) => setFileList((prevList) => prevList.filter((item) => item.uid !== file.uid)),
@@ -155,8 +190,8 @@ function InferenceSection({ reloadInferenceList }) {
       title: '추론파일',
       dataIndex: 'generatedFileName',
       key: 'generatedFileName',
-      render: (text, record) => {
-        return <div>
+      render: (text, record) => (
+        <div>
           <span style={{ marginRight: '8px' }}>{text}</span>
           {record.generatedFileName !== '-' && (
             <a href={downloadFileLink(record.generatedFileId)} download>
@@ -164,7 +199,7 @@ function InferenceSection({ reloadInferenceList }) {
             </a>
           )}
         </div>
-      },
+      ),
     },
     {
       title: '추론파일 크기',
@@ -178,7 +213,7 @@ function InferenceSection({ reloadInferenceList }) {
     onChange: (selectedRowKeys) => {
       setSelectedInferenceKeys(selectedRowKeys.slice(-1));
     },
-    getCheckboxProps: (record) => ({ disabled: record.current })
+    getCheckboxProps: (record) => ({ disabled: record.current }),
   };
 
   return (
@@ -197,23 +232,27 @@ function InferenceSection({ reloadInferenceList }) {
       </div>
 
       <div style={{ marginBottom: '20px' }}>
-        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 className="table-title">파일</h3>
           <div>
-            <Select
-              placeholder="추론 모델을 선택하세요"
-              style={{ width: 200, marginRight: '5px'}}
-              value={selectedModel}
-              onChange={(value) => setSelectedModel(value)}
-            >
-              {modelList.filter((model) => model.status === 'complete' && model.is_deploy === true).map((model) => (
-                    <Option key={model.id} value={model.id}>
-                        {model.model_name}
-                    </Option>
-              ))}
-            </Select>
-            <Button type="default" size="small" className="table-button" style={{ marginRight: '5px' }} onClick={handleGenerateInferenceFile}>추론</Button>
-            <Button type="default" size="small" className="table-button" style={{ marginRight: '5px' }} onClick={handleDelete}>파일삭제</Button>
+          <Select
+            placeholder="추론 모델을 선택하세요"
+            style={{ width: 200, marginRight: '5px' }}
+            onChange={(value) => setSelectedModelId(value)}
+            loading={isModelLoading}
+          >
+            {modelList?.map((model) => (
+              <Option key={model.id} value={model.id}>
+                {model.model_name}
+              </Option>
+            ))}
+          </Select>
+            <Button type="default" size="small" className="table-button" style={{ marginRight: '5px' }} onClick={handleGenerateInferenceFile}>
+              추론
+            </Button>
+            <Button type="default" size="small" className="table-button" style={{ marginRight: '5px' }} onClick={handleDelete}>
+              파일삭제
+            </Button>
           </div>
         </div>
         <Table
@@ -224,9 +263,12 @@ function InferenceSection({ reloadInferenceList }) {
           locale={{ emptyText: '목록 없음' }}
           pagination={false}
           scroll={{ y: 200 }}
-          onRow={( _, index ) => ({
+          onRow={(record, index) => ({
             ref: index === inferenceData.length - 1 ? ref : null,
           })}
+          footer={() => (
+            isFetchingNextPage ? <Spin indicator={<LoadingOutlined spin />} /> : null
+          )}
         />
       </div>
     </div>

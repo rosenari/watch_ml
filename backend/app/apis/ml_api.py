@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from app.services.ml_service import get_ml_service, MlService
 from app.services.dataset_service import get_dataset_service, DataSetService
 from app.apis.models import ModelCreateRequest, ModelDeployRequest
 from app.tasks.main import create_model_task, deploy_model_task, undeploy_model_task
-from typing import List
+from typing import List, Optional
 
 
 router = APIRouter()
@@ -43,7 +43,10 @@ async def get_ml_status(ml_service: MlService = Depends(get_ml_service)):
 
 
 @router.get('/list', response_model=List[dict])
-async def get_ml_status(ml_service: MlService = Depends(get_ml_service)):
-    ml_list = await ml_service.get_model_list()
+async def get_ml_list(
+    last_id: Optional[int] = Query(None),
+    ml_service: MlService = Depends(get_ml_service)
+):
+    ml_list = await ml_service.get_model_list(last_id=last_id)
     
     return ml_list

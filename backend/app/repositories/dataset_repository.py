@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from sqlalchemy import desc, select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -43,10 +43,19 @@ class DatasetRepository:
         dataset.is_delete = True
         await self.db.flush()
 
-    async def list_files_with_filemeta(self) -> List[DataSet]:
+    async def list_files_with_filemeta(
+        self,
+        last_id: Optional[int] = None,
+        limit: int = 15
+    ) -> List[DataSet]:
         query = select(DataSet).options(joinedload(DataSet.file_meta)).filter_by(is_delete=False)
+        
+        if last_id is not None:
+            query = query.filter(DataSet.id < last_id)
+        
+        query = query.order_by(desc(DataSet.id)).limit(limit)
 
-        result = await self.db.execute(query.order_by(desc(DataSet.id)))
+        result = await self.db.execute(query)
         return result.scalars().all()
 
     async def list_files(self) -> List[DataSet]:

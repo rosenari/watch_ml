@@ -30,9 +30,9 @@ class DataSetService:
         await self.repository.delete_file(dataset_id=dataset_id)
         return True
 
-    async def get_file_list(self) -> List[dict]:
+    async def get_file_list(self, last_id: int = None) -> List[dict]:
         """디렉터리 내 모든 파일 목록을 반환합니다."""
-        datasets = await self.repository.list_files_with_filemeta()
+        datasets = await self.repository.list_files_with_filemeta(last_id=last_id)
         return [dataset.serialize() for dataset in datasets]
 
     async def get_file_status(self) -> List[dict]:

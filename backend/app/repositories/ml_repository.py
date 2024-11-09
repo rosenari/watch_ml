@@ -8,7 +8,7 @@ from app.entity import AiModel, Status, FileMeta
 from app.repositories.file_repository import FileRepository
 from app.dto import AiModelDTO
 from app.exceptions import NotFoundException
-from typing import Optional
+from typing import Optional, List
 from app.config import YOLO_CLASS_LIST, MODEL_DIRECTORY, FASHION_MODEL_CLASS_LIST
 
 
@@ -126,9 +126,12 @@ class MlRepository:
         return result.scalars().all()
 
     # 모든 모델 정보 가져오기 (연관 테이블 포함)
-    async def get_all_models_with_filemeta(self) -> list[AiModel]:
-        """모든 모델 정보를 조회하며 연관 테이블도 로드합니다."""
-        result = await self.db.execute(
+    async def get_all_models_with_filemeta(
+        self,
+        last_id: Optional[int] = None,
+        limit: int = 15
+    ) -> List[AiModel]:
+        query = (
             select(AiModel)
             .options(
                 joinedload(AiModel.model_file),
@@ -136,8 +139,14 @@ class MlRepository:
                 joinedload(AiModel.base_model).joinedload(AiModel.model_file)
             )
             .filter(AiModel.is_delete == False)
-            .order_by(desc(AiModel.id))
         )
+
+        if last_id is not None:
+            query = query.filter(AiModel.id < last_id)
+        
+        query = query.order_by(desc(AiModel.id)).limit(limit)
+
+        result = await self.db.execute(query)
         return result.scalars().all()
 
     # 모델 삭제

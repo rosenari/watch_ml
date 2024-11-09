@@ -55,8 +55,8 @@ class MlService:
 
         return model.serialize()
 
-    async def get_model_list(self) -> List[dict]:
-        models = await self.repository.get_all_models_with_filemeta()
+    async def get_model_list(self, last_id: int = None) -> List[dict]:
+        models = await self.repository.get_all_models_with_filemeta(last_id=last_id)
         return [model.serialize() for model in models]
     
     async def get_model_status(self) -> List[dict]:

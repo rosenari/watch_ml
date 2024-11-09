@@ -73,14 +73,14 @@ async def test_update_generated_file(inference_service: InferenceService, temp_d
     generated_file_path = os.path.join(temp_directory, generated_file_name)
     with open(temp_file_in_directory, "rb") as temp_file_for_upload:
         upload_file = UploadFile(filename=temp_file_name, file=temp_file_for_upload)
-        inference_file_id = await inference_service.upload_file(upload_file)
+        inference_file = await inference_service.upload_file(upload_file)
 
     with open(generated_file_path, "wb") as generated_file:
         generated_file.write(b'test file')
 
     uploaded_file_path = os.path.join(temp_directory, temp_file_name)
     assert os.path.exists(uploaded_file_path)  # 파일 존재 여부
-    inference_file = await inference_service.update_generated_file(inference_file_id, generated_file_path)
+    inference_file = await inference_service.update_generated_file(inference_file['id'], generated_file_path)
     inference_file = await inference_service.get_file_by_id(inference_file['id'])
 
     assert inference_file['generated_file_name'] == generated_file_name, "Not found generated_file_name"
@@ -94,11 +94,11 @@ async def test_delete_file(inference_service: InferenceService, temp_file_in_dir
     with open(temp_file_in_directory, "rb") as temp_file_for_upload:
         upload_file = UploadFile(filename=temp_file_name, file=temp_file_for_upload)
 
-        inference_file_id = await inference_service.upload_file(upload_file)
+        inference_file = await inference_service.upload_file(upload_file)
 
     assert os.path.exists(temp_file_in_directory)
 
-    await inference_service.delete_file(inference_file_id)
+    await inference_service.delete_file(inference_file['id'])
 
     file_list = await inference_service.get_file_list()
     file_names = [file['original_file_name'] for file in file_list]
@@ -130,9 +130,9 @@ async def test_get_file_list(inference_service: InferenceService, temp_directory
 async def test_update_status(inference_service: InferenceService, temp_file_in_directory):
     with open(temp_file_in_directory, "rb") as temp_file_for_upload:
         upload_file = UploadFile(filename="temp_test_file.jpg", file=temp_file_for_upload)
-        inference_file_id = await inference_service.upload_file(upload_file)
+        inference_file = await inference_service.upload_file(upload_file)
 
-    await inference_service.update_status(inference_file_id, "running")
+    await inference_service.update_status(inference_file['id'], "running")
 
     # 파일 상태를 조회
     file_status_list = await inference_service.get_file_status()
@@ -155,9 +155,9 @@ async def test_get_file_status(inference_service: InferenceService, temp_directo
         
         with open(temp_file_path, "rb") as temp_file_for_upload:
             upload_file = UploadFile(filename=file_name, file=temp_file_for_upload)
-            inference_file_id = await inference_service.upload_file(upload_file)
+            inference_file = await inference_service.upload_file(upload_file)
 
-        await inference_service.update_status(inference_file_id, status)
+        await inference_service.update_status(inference_file['id'], status)
 
     file_status_list = await inference_service.get_file_status()
 

@@ -67,15 +67,15 @@ async def test_upload_file(dataset_service: DataSetService, temp_directory, temp
 
 @pytest.mark.asyncio
 async def test_delete_file(dataset_service: DataSetService, temp_file_in_directory):
-    dataset_id = None
+    dataset = None
     with open(temp_file_in_directory, "rb") as temp_file_for_upload:
         upload_file = UploadFile(filename="temp_test_file.txt", file=temp_file_for_upload)
 
-        dataset_id = await dataset_service.upload_file(upload_file)
+        dataset = await dataset_service.upload_file(upload_file)
 
     assert os.path.exists(temp_file_in_directory)
 
-    await dataset_service.delete_file(dataset_id)
+    await dataset_service.delete_file(dataset['id'])
 
     file_list = await dataset_service.get_file_list()
     file_names = [file['file_name'] for file in file_list]
@@ -107,7 +107,8 @@ async def test_get_file_list(dataset_service: DataSetService, temp_directory):
 async def test_update_status(dataset_service: DataSetService, temp_file_in_directory):
     with open(temp_file_in_directory, "rb") as temp_file_for_upload:
         upload_file = UploadFile(filename="temp_test_file.txt", file=temp_file_for_upload)
-        dataset_id = await dataset_service.upload_file(upload_file)
+        dataset = await dataset_service.upload_file(upload_file)
+        dataset_id = dataset['id']
 
         await dataset_service.update_status(dataset_id, "running")
 
@@ -132,7 +133,8 @@ async def test_get_file_status(dataset_service: DataSetService, temp_directory):
         
         with open(temp_file_path, "rb") as temp_file_for_upload:
             upload_file = UploadFile(filename=file_name, file=temp_file_for_upload)
-            dataset_id = await dataset_service.upload_file(upload_file)
+            dataset = await dataset_service.upload_file(upload_file)
+            dataset_id = dataset['id']
 
             await dataset_service.update_status(dataset_id, status)
 

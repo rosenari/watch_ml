@@ -1,22 +1,51 @@
 // FileUploadSection.js
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Upload, Table, Button, message, Spin, Select } from 'antd';
+import { useInView } from 'react-intersection-observer';
 import { FileImageOutlined, LoadingOutlined, ExclamationCircleOutlined, DownloadOutlined  } from '@ant-design/icons';
 import { originalFileUpload, generateInferenceFile, deleteOriginalFile, downloadFileLink } from 'api/inference';
 import { useInference } from 'hooks';
+import { formatInferenceList } from 'reloader';
 import { getModelList } from 'api/ml';
+import { getInferenceList } from 'api/inference';
 import "./InferenceSection.css";
 
 const { Dragger } = Upload;
 const { Option } = Select;
 
 function InferenceSection({ reloadInferenceList }) {
-  const { inferenceData } = useInference();
+  const { inferenceData, setInferenceData } = useInference();
   const [ selectedInferenceKeys, setSelectedInferenceKeys] = useState([]);
   const [ fileList, setFileList] = useState([]);
   const [selectedModel, setSelectedModel] = useState(null);
   const [ modelList, setModelList] = useState([]);
+  const [hasMore, setHasMore] = useState(true); 
+  const [ref, inView] = useInView();
+  
+  const loadMoreData = useCallback(async (lastId) => {
+    if (!hasMore) return;
+
+    const newData = await getInferenceList(lastId);
+    if (newData.length === 0) {
+      setHasMore(false); // 빈 배열이면 더 이상 로드하지 않음
+      return;
+    }
+
+    setInferenceData([
+      ...inferenceData,
+      ...formatInferenceList(newData),
+    ]);
+
+    return newData.length ? newData[newData.length - 1].id : null;
+  }, [hasMore, setInferenceData, inferenceData]);
+
+  useEffect(() => {
+    if (inView && hasMore) {
+      const lastId = inferenceData.length ? inferenceData[inferenceData.length - 1].key : null;
+      loadMoreData(lastId);
+    }
+  }, [inView, hasMore, inferenceData, loadMoreData]);
 
   useEffect(() => {
     reloadInferenceList();
@@ -194,6 +223,10 @@ function InferenceSection({ reloadInferenceList }) {
           dataSource={inferenceData}
           locale={{ emptyText: '목록 없음' }}
           pagination={false}
+          scroll={{ y: 200 }}
+          onRow={( _, index ) => ({
+            ref: index === inferenceData.length - 1 ? ref : null,
+          })}
         />
       </div>
     </div>

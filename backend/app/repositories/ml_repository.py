@@ -129,7 +129,7 @@ class MlRepository:
     async def get_all_models_with_filemeta(
         self,
         last_id: Optional[int] = None,
-        limit: int = 15
+        limit: int = 10
     ) -> List[AiModel]:
         query = (
             select(AiModel)

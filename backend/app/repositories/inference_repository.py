@@ -97,7 +97,7 @@ class InferenceRepository:
     async def list_files_with_filemeta(
         self,
         last_id: Optional[int] = None,
-        limit: int = 15
+        limit: int = 10
     ) -> List[InferenceFile]:
         query = (
             select(InferenceFile)

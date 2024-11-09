@@ -42,3 +42,7 @@ body {
 .ant-menu-item:hover {
   border-radius: 0 !important;
 }
+
+.ant-table-wrapper .ant-table-footer {
+  background: #ffffff;
+}

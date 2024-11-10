@@ -4,7 +4,7 @@ import { createModel } from 'api/ml';
 import { useModel, useDataset } from 'hooks';
 const { Option } = Select;
 
-const ModelCreateModal = ({ isModalVisible, setIsModalVisible, selectedDatasetKeys, setSelectedDatasetKeys, reloadModelList }) => {
+const ModelCreateModal = ({ isModalVisible, setIsModalVisible, selectedDatasetKeys, setSelectedDatasetKeys, setModelPollEnabled }) => {
     const [selectedModel, setSelectedModel] = useState(null);
     const [customModelName, setCustomModelName] = useState('');
     const { modelData } = useModel();
@@ -30,14 +30,15 @@ const ModelCreateModal = ({ isModalVisible, setIsModalVisible, selectedDatasetKe
                     return;
                 }
 
+                setSelectedDatasetKeys([]);
+
                 await createModel({ modelName: customModelName, baseModelName: selectedModel, zipFileIds: selectedDatasetKeys });
-            
+                
                 setIsModalVisible(false);
                 setSelectedModel(null);
                 setCustomModelName('');
-                setSelectedDatasetKeys([]);
 
-                reloadModelList();
+                setModelPollEnabled(true);
             }}
             onCancel={() => {
                 setIsModalVisible(false);

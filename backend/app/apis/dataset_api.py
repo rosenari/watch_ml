@@ -1,5 +1,5 @@
-from fastapi import APIRouter, UploadFile, Depends
-from typing import List
+from fastapi import APIRouter, UploadFile, Depends, Query
+from typing import List, Optional
 from app.apis.models import FileValidationRequest
 from app.validation import validate_zip_file
 from app.tasks.main import valid_archive_task
@@ -31,9 +31,10 @@ async def delete_file(
 # 파일 목록
 @router.get("/list", response_model=List[dict])
 async def get_file_list(
+    last_id: Optional[int] = Query(None),
     dataset_service: DataSetService = Depends(get_dataset_service)
 ):
-    return await dataset_service.get_file_list()
+    return await dataset_service.get_file_list(last_id=last_id)
 
 
 # 파일 유효성 검사 시작

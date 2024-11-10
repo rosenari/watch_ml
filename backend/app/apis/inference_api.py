@@ -1,5 +1,5 @@
-from fastapi import APIRouter, UploadFile, Depends
-from typing import List
+from fastapi import APIRouter, UploadFile, Depends, Query
+from typing import List, Optional
 from app.apis.models import InferenceGenerateRequest
 from app.validation import validate_inference_file
 from app.services.inference_service import get_inference_service, InferenceService
@@ -48,8 +48,11 @@ async def delete_file(
 
 # 파일 목록
 @router.get("/list", response_model=List[dict])
-async def get_file_list(inference_service: InferenceService = Depends(get_inference_service)):
-    return await inference_service.get_file_list()
+async def get_file_list(
+    last_id: Optional[int] = Query(None),
+    inference_service: InferenceService = Depends(get_inference_service)
+):
+    return await inference_service.get_file_list(last_id=last_id)
 
 
 # 파일 상태

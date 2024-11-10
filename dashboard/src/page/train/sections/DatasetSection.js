@@ -1,24 +1,82 @@
-// FileUploadSection.js
-
 import React, { useState, useEffect } from 'react';
 import { Upload, Table, Button, message, Spin } from 'antd';
 import { InboxOutlined, CheckOutlined, LoadingOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
-import { datasetUpload, deleteDataset, validDataset } from 'api/dataset';
+import { datasetUpload, deleteDataset, validDataset, getDatasetList, getDatasetStatus } from 'api/dataset';
+import { useInfiniteQuery, useQuery } from 'react-query';
 import { useDataset } from 'hooks';
+import { useInView } from 'react-intersection-observer';
 import ModelCreateModal from './components/ModelCreateModal';
+import { formatDatasetList } from 'formatter';
 import "./DatasetSection.css";
 
 const { Dragger } = Upload;
 
-function DatasetSection({ reloadDatasetList, reloadModelList }) {
-  const { datasetData } = useDataset();
-  const [ selectedDatasetKeys, setSelectedDatasetKeys] = useState([]);
-  const [ fileList, setFileList] = useState([]);
-  const [ isModalVisible, setIsModalVisible] = useState(false);
+function DatasetSection({ setModelPollEnabled }) {
+  const { datasetData, setDatasetData } = useDataset();
+  const [selectedDatasetKeys, setSelectedDatasetKeys] = useState([]);
+  const [fileList, setFileList] = useState([]);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [pollEnabled, setPollEnabled] = useState(true);
+  const [ref, inView] = useInView();
+
+  // 무한 스크롤 로직
+  const {
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch
+  } = useInfiniteQuery(
+    'datasetList',
+    ({ pageParam = null }) => getDatasetList(pageParam),
+    {
+      getNextPageParam: (lastPage) =>{
+        return lastPage.length ? lastPage[lastPage.length - 1].id : undefined;
+      },
+      onSuccess: (data) => {
+        setTimeout(() => {
+          const formattedData = data.pages.flatMap(formatDatasetList);
+          setDatasetData(formattedData);
+        });
+      },
+      cacheTime: 0,
+      staleTime: 0,
+    }
+  );
 
   useEffect(() => {
-    reloadDatasetList();
-  }, [reloadDatasetList]);
+    if (inView && hasNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, fetchNextPage]);
+
+  // 폴링 로직
+  useQuery(
+    'datasetStatus',
+    getDatasetStatus,
+    {
+      refetchInterval: pollEnabled ? 500 : false,
+      onSuccess: async (newStatusData) => {
+        const updatedData = datasetData.map((item) => ({
+          ...item,
+          status: newStatusData.find(status => status.id === item.key)?.status || item.status,
+        }));
+        setDatasetData(updatedData);
+
+        if (!updatedData.some(item => item.status === 'running' || item.status === 'pending')) {
+          setPollEnabled(false);
+          await refetch();
+        }
+      },
+      cacheTime: 0,
+      staleTime: 0,
+    }
+  );
+
+  useEffect(() => {
+    if (pollEnabled) {
+      refetch();
+    }
+  }, [pollEnabled, refetch]);
 
   const handleUpload = async () => {
     if (fileList.length === 0) {
@@ -33,7 +91,7 @@ function DatasetSection({ reloadDatasetList, reloadModelList }) {
           throw new Error('정상적으로 업로드 되지 않음.');
         }
         message.success(`${file.name} 업로드 성공`);
-        reloadDatasetList();
+        await refetch();
       } catch (error) {
         console.error(error);
         message.error(`${file.name} 업로드 실패`);
@@ -43,51 +101,52 @@ function DatasetSection({ reloadDatasetList, reloadModelList }) {
   };
 
   const handleReset = () => {
-    setFileList([]); 
+    setFileList([]);
     message.success('파일 목록이 초기화되었습니다.');
   };
 
   const handleDelete = async () => {
     if (selectedDatasetKeys.length === 0) {
       message.warning('삭제할 파일을 지정하지 않았습니다.');
+      return;
     }
 
+    setSelectedDatasetKeys([]);
     for (const datasetId of selectedDatasetKeys) {
       const dataset = datasetData.find(dataset => dataset.key === datasetId);
       const fileName = dataset.fileName;
-    
+
       try {
         const result = await deleteDataset(datasetId);
         result ? message.success(`${fileName} 삭제 성공`) : message.error(`${fileName} 삭제 실패`);
+        await refetch();
       } catch (error) {
         message.error(`${fileName} 삭제 실패`);
       }
     }
-    
-    setSelectedDatasetKeys([]);
-    reloadDatasetList();
   };
 
   const handleValid = async () => {
     if (selectedDatasetKeys.length === 0) {
       message.warning('검사할 파일을 지정하지 않았습니다.');
+      return;
     }
-
-    await validDataset(selectedDatasetKeys);
     setSelectedDatasetKeys([]);
 
-    reloadDatasetList();
+    await validDataset(selectedDatasetKeys);
+    message.info('파일 검사 요청');
+    setPollEnabled(true);  // 검사 후 폴링 활성화
   };
 
-  const handleModelCreate = async () => {
+  const handleModelCreate = () => {
     if (selectedDatasetKeys.length === 0) {
       message.warning('모델 생성을 위한 파일을 지정하지 않았습니다.');
       return;
     }
 
     const hasIncompleteFiles = datasetData
-    .filter((dataset) => dataset.status !== 'complete')
-    .some((dataset) => selectedDatasetKeys.includes(dataset.fileName));
+      .filter((dataset) => dataset.status !== 'complete')
+      .some((dataset) => selectedDatasetKeys.includes(dataset.fileName));
 
     if (hasIncompleteFiles) {
       message.warning('선택한 파일 중 검사되지 않은 파일이 있습니다.');
@@ -95,14 +154,13 @@ function DatasetSection({ reloadDatasetList, reloadModelList }) {
     }
 
     setIsModalVisible(true);
-
-  }
+  };
 
   const uploadProps = {
     multiple: true,
     beforeUpload: (file) => {
       setFileList((prevList) => [...prevList, file]);
-      return false; 
+      return false;
     },
     fileList,
     onRemove: (file) => setFileList((prevList) => prevList.filter((item) => item.uid !== file.uid)),
@@ -160,7 +218,8 @@ function DatasetSection({ reloadDatasetList, reloadModelList }) {
         setIsModalVisible={setIsModalVisible} 
         selectedDatasetKeys={selectedDatasetKeys} 
         setSelectedDatasetKeys={setSelectedDatasetKeys}
-        reloadModelList={reloadModelList} />
+        setModelPollEnabled={setModelPollEnabled}
+      />
 
       <div style={{ marginBottom: '20px' }}>
         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
@@ -178,6 +237,13 @@ function DatasetSection({ reloadDatasetList, reloadModelList }) {
           dataSource={datasetData}
           locale={{ emptyText: '목록 없음' }}
           pagination={false}
+          scroll={{ y: 200 }}
+          onRow={(record, index) => ({
+            ref: index === datasetData.length - 1 ? ref : null,
+          })}
+          footer={() => (
+            isFetchingNextPage ? <Spin indicator={<LoadingOutlined spin />} /> : null
+          )}
         />
       </div>
     </div>

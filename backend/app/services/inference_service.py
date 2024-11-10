@@ -40,9 +40,9 @@ class InferenceService:
         inference_file = await self.repository.get_inference_file_by_id(inference_file_id)
         return inference_file.serialize()
 
-    async def get_file_list(self) -> List[dict]:
+    async def get_file_list(self, last_id: int = None) -> List[dict]:
         """모든 InferenceFile 목록을 반환합니다."""
-        inference_files = await self.repository.list_files_with_filemeta()
+        inference_files = await self.repository.list_files_with_filemeta(last_id=last_id)
         return [inference_file.serialize() for inference_file in inference_files]
     
     async def get_file_status(self) -> List[dict]:

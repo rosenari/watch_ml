@@ -53,8 +53,9 @@ export async function deleteOriginalFile(inferenceFileId) {
 }
 
 
-export async function getInferenceList() {
-    const response = await fetch(`${API_BASE_URL}/inference/list`);
+export async function getInferenceList(lastId = null) {
+    const url = lastId !== null ? `${API_BASE_URL}/inference/list?last_id=${lastId}` : `${API_BASE_URL}/inference/list`;
+    const response = await fetch(url);
     
     if (response.ok) {
         const list = await response.json();

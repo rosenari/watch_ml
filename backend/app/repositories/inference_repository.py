@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Optional
 from sqlalchemy import desc
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -94,17 +94,26 @@ class InferenceRepository:
         return inference_file
 
     # FileMeta Join
-    async def list_files_with_filemeta(self) -> List[InferenceFile]:
-        """file_meta 정보를 포함한 InferenceFile 목록을 반환합니다."""
-        result = await self.db.execute(
+    async def list_files_with_filemeta(
+        self,
+        last_id: Optional[int] = None,
+        limit: int = 10
+    ) -> List[InferenceFile]:
+        query = (
             select(InferenceFile)
             .options(
                 joinedload(InferenceFile.original_file),
                 joinedload(InferenceFile.generated_file)
             )
             .filter(InferenceFile.is_delete == False)
-            .order_by(desc(InferenceFile.id))
         )
+
+        if last_id is not None:
+            query = query.filter(InferenceFile.id < last_id)
+        
+        query = query.order_by(desc(InferenceFile.id)).limit(limit)
+
+        result = await self.db.execute(query)
         return result.scalars().all()
     
     async def list_files(self) -> List[InferenceFile]:

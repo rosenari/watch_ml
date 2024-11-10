@@ -8,9 +8,21 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import logging
 import traceback
+import json
 
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger("backend")
+logger.setLevel(logging.INFO)
+
+# JSON 형태로 로그 포맷 설정
+handler = logging.StreamHandler()
+formatter = logging.Formatter(json.dumps({
+    "log": "%(message)s",
+    "tag": "backend",
+    "level": "%(levelname)s"
+}))
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 
 @asynccontextmanager
@@ -32,9 +44,9 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    logging.error(f"Exception occurred: {exc}")
-    logging.error("Traceback:")
-    logging.error("".join(traceback.format_exception(None, exc, exc.__traceback__)))
+    logger.error(f"Exception occurred: {exc}")
+    logger.error("Traceback:")
+    logger.error("".join(traceback.format_exception(None, exc, exc.__traceback__)))
 
     if isinstance(exc, NotFoundException):
         return JSONResponse(

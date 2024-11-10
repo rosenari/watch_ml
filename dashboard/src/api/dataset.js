@@ -19,8 +19,9 @@ export async function datasetUpload(file) {
 }
 
 
-export async function getDatasetList() {
-    const response = await fetch(`${API_BASE_URL}/dataset/list`);
+export async function getDatasetList(lastId = null) {
+    const url = lastId !== null ? `${API_BASE_URL}/dataset/list?last_id=${lastId}` : `${API_BASE_URL}/dataset/list`;
+    const response = await fetch(url);
     
     if (response.ok) {
         const list = await response.json();

@@ -1,15 +1,100 @@
-// ModelTableSection.js
-
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Tag, Spin, Progress, message  } from 'antd';
+import { Table, Button, Tag, Spin, Progress, message } from 'antd';
 import { blue } from '@ant-design/colors';
+import { useInfiniteQuery, useQuery } from 'react-query';
 import { useModel } from 'hooks';
+import { useInView } from 'react-intersection-observer';
 import { CheckOutlined, LoadingOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
-import { deployModel, undeployModel } from 'api/ml';
+import { deployModel, undeployModel, getModelList, getModelStatus } from 'api/ml';
+import { formatModelList } from 'formatter';
 
-function ModelTableSection({ reloadModelList }) {
-  const { modelData } = useModel();
+function ModelTableSection({ modelPollEnabled, setModelPollEnabled }) {
+  const { modelData, setModelData } = useModel();
   const [selectedModelKeys, setSelectedModelKeys] = useState([]);
+  const [ref, inView] = useInView();
+
+  // 무한 스크롤 로직
+  const {
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch,
+  } = useInfiniteQuery(
+    'modelList',
+    ({ pageParam = null }) => getModelList(pageParam),
+    {
+      getNextPageParam: (lastPage) => {
+        return lastPage.length ? lastPage[lastPage.length - 1].id : undefined;
+      },
+      onSuccess: (data) => {
+        setTimeout(() => {
+          const formattedData = data.pages.flatMap(formatModelList);
+          setModelData(formattedData);
+        });
+      },
+      cacheTime: 0,
+      staleTime: 0,
+    }
+  );
+
+  useEffect(() => {
+    if (inView && hasNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, fetchNextPage]);
+
+  // 폴링 로직
+  useQuery(
+    'modelStatus',
+    getModelStatus,
+    {
+      refetchInterval: modelPollEnabled ? 500 : false,
+      onSuccess: async (newStatusData) => {
+        const updatedData = modelData.map((item) => ({
+          ...item,
+          status: newStatusData.find(status => status.id === item.key)?.status || item.status,
+        }));
+        setModelData(updatedData);
+
+        if (!updatedData.some(item => item.status === 'running' || item.status === 'pending')) {
+          setModelPollEnabled(false);
+          await refetch();
+        }
+      },
+      cacheTime: 0,
+      staleTime: 0,
+    }
+  );
+
+  useEffect(() => {
+    if (modelPollEnabled) {
+      refetch();
+    }
+  }, [modelPollEnabled, refetch]);
+
+  const handleDeploy = async () => {
+    if (selectedModelKeys.length === 0) {
+      message.warning('배포할 모델을 선택해주세요.');
+      return;
+    }
+    setSelectedModelKeys([]);
+
+    await deployModel({ modelId: selectedModelKeys[0] });
+    message.info('모델 배포 요청');
+    setModelPollEnabled(true);
+  };
+
+  const handleUnDeploy = async () => {
+    if (selectedModelKeys.length === 0) {
+      message.warning('배포 해제할 모델을 선택해주세요.');
+      return;
+    }
+    setSelectedModelKeys([]);
+
+    await undeployModel({ modelId: selectedModelKeys[0] });
+    message.info('모델 배포 해제 요청');
+    setModelPollEnabled(true);
+  };
 
   const modelColumns = [
     {
@@ -25,16 +110,7 @@ function ModelTableSection({ reloadModelList }) {
             </Tag>
           )}
           {/^\d+$/.test(record.status) ? (
-            <>
-              <LoadingOutlined spin style={{ marginRight: '5px' }} />
-              <Progress
-                percent={record.status}
-                size="small"
-                steps={10}
-                strokeColor={blue[6]}
-                style={{ width: 0, marginLeft: 3, fontSize: '10px' }}
-              />
-            </>
+            <Progress percent={record.status} size="small" steps={10} strokeColor={blue[6]} style={{ width: 0, marginLeft: 3, fontSize: '10px' }} />
           ) : (
             <>
               {record.status === 'complete' && <CheckOutlined style={{ color: 'green', marginRight: 8 }} />}
@@ -55,36 +131,8 @@ function ModelTableSection({ reloadModelList }) {
 
   const modelRowSelection = {
     selectedRowKeys: selectedModelKeys,
-    onChange: (selectedRowKeys) => {
-      setSelectedModelKeys(selectedRowKeys.slice(-1));
-    },
-    getCheckboxProps: (record) => ({ disabled: record.current }),
+    onChange: (selectedRowKeys) => setSelectedModelKeys(selectedRowKeys.slice(-1)),
   };
-  useEffect(() =>{
-    reloadModelList();
-  }, [reloadModelList]);
-
-  const handleDeploy = async () => {
-    if (selectedModelKeys.length === 0) {
-      message.warning('배포할 모델을 선택해주세요.');
-    }
-
-    await deployModel({ modelId: selectedModelKeys[0] });
-    setSelectedModelKeys([]);
-
-    reloadModelList();
-  }
-
-  const handleUnDeploy = async () => {
-    if (selectedModelKeys.length === 0) {
-      message.warning('배포 해제할 모델을 선택해주세요.');
-    }
-
-    await undeployModel({ modelId: selectedModelKeys[0] });
-    setSelectedModelKeys([]);
-
-    reloadModelList();
-  }
 
   return (
     <div>
@@ -102,6 +150,13 @@ function ModelTableSection({ reloadModelList }) {
         dataSource={modelData}
         locale={{ emptyText: '목록 없음' }}
         pagination={false}
+        scroll={{ y: 200 }}
+        onRow={(record, index) => ({
+          ref: index === modelData.length - 1 ? ref : null,
+        })}
+        footer={() => (
+          isFetchingNextPage ? <Spin indicator={<LoadingOutlined spin />} /> : null
+        )}
       />
     </div>
   );

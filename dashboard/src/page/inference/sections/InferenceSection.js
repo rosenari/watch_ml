@@ -6,11 +6,12 @@ import { FileImageOutlined, LoadingOutlined, ExclamationCircleOutlined, Download
 import { originalFileUpload, generateInferenceFile, deleteOriginalFile, downloadFileLink, getInferenceList, getInferenceStatus } from 'api/inference';
 import { getModelList } from 'api/ml';
 import { useInference } from 'hooks';
-import { formatInferenceList } from 'reloader';
+import { formatInferenceList } from 'formatter';
 import './InferenceSection.css';
 
 const { Dragger } = Upload;
 const { Option } = Select;
+
 
 function InferenceSection() {
   const { inferenceData, setInferenceData } = useInference();
@@ -19,14 +20,24 @@ function InferenceSection() {
   const [selectedModel, setSelectedModelId] = useState(null);
   const [ pollEnabled, setPollEnabled ] = useState(true);
   const [ref, inView] = useInView();
+  const [modelList, setModelList] = useState([]);
+  const [isModelLoading, setIsModelLoading] = useState(true);
   // 배포된 모델 정보 가져오기
-  const { data: modelList, isLoading: isModelLoading } = useQuery(
-    'modelList',
-    getModelList,
-    {
-      select: (data) => data.filter((model) => model.status === 'complete' && model.is_deploy),
-    }
-  );
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsModelLoading(true);
+      try {
+        const data = await getModelList();
+        setModelList(data.filter((model) => model.status === 'complete' && model.is_deploy));
+      } catch (error) {
+        console.error('Failed to fetch model list:', error);
+      } finally {
+        setIsModelLoading(false);
+      }
+    };
+  
+    fetchData();
+  }, [setIsModelLoading]);
 
   // 무한 스크롤
   const {
@@ -39,7 +50,7 @@ function InferenceSection() {
     ({ pageParam = null }) => getInferenceList(pageParam),
     {
       getNextPageParam: (lastPage) => {
-        return lastPage.length ? lastPage[lastPage.length - 1].id : undefined;
+        return lastPage.length > 0 ? lastPage[lastPage.length - 1].id : undefined;
       },
       onSuccess: (data) => {
         setTimeout(() => {
@@ -47,8 +58,8 @@ function InferenceSection() {
           setInferenceData(formattedData);
         });
       },
-      cacheTime: 0,
       staleTime: 0,
+      cacheTime: 0,
     }
   );
 
@@ -65,8 +76,7 @@ function InferenceSection() {
     getInferenceStatus,
     {
       refetchInterval: pollEnabled ? 500 : false, // 0.5초마다 폴링
-      onSuccess: (newStatusData) => {
-        console.log(inferenceData);
+      onSuccess: async (newStatusData) => {
         const updatedData = inferenceData.map((item) => ({
           ...item,
           status: newStatusData.find((status) => status.id === item.key)?.status || item.status,
@@ -74,13 +84,19 @@ function InferenceSection() {
         setInferenceData(updatedData);
         if(!updatedData.some((item) => item.status === 'running' || item.status === 'pending')) {
           setPollEnabled(false);
-          refetch();
+          await refetch();
         }
       },
       cacheTime: 0,
       staleTime: 0,
     }
   );
+
+  useEffect(() => {
+    if (pollEnabled) {
+      refetch();
+    }
+  }, [pollEnabled, refetch]);
 
   const handleUpload = async () => {
     if (fileList.length === 0) {
@@ -95,7 +111,7 @@ function InferenceSection() {
           throw new Error('정상적으로 업로드 되지 않음.');
         }
         message.success(`${file.name} 업로드 성공`);
-        refetch();
+        await refetch();
       } catch (error) {
         console.error(error);
         message.error(`${file.name} 업로드 실패`);
@@ -114,6 +130,7 @@ function InferenceSection() {
       message.warning('삭제할 파일을 지정하지 않았습니다.');
       return;
     }
+    setSelectedInferenceKeys([]);
 
     for (const inferenceFileId of selectedInferenceKeys) {
       try {
@@ -122,7 +139,7 @@ function InferenceSection() {
         const fileName = inferenceFile.fileName;
         if (result) {
           message.success(`${fileName} 삭제 성공`);
-          refetch(); 
+          await refetch(); 
         } else {
           message.error(`${fileName} 삭제 실패`);
         }
@@ -130,7 +147,6 @@ function InferenceSection() {
         message.error('삭제 중 오류 발생');
       }
     }
-    setSelectedInferenceKeys([]);
   };
 
   const handleGenerateInferenceFile = async () => {
@@ -144,15 +160,15 @@ function InferenceSection() {
       return;
     }
 
+    setSelectedInferenceKeys([]);
+
     try {
       await generateInferenceFile({ inferenceFileId: selectedInferenceKeys[0], modelId: selectedModel });
-      message.success('추론 요청 성공');
+      message.info('추론 요청');
       setPollEnabled(true);
     } catch (error) {
-      console.log(error);
       message.error('추론 요청 실패');
     }
-    setSelectedInferenceKeys([]);
   };
 
   const uploadProps = {

@@ -37,7 +37,7 @@ npm run start
 - **celery worker**: 파일 검사, 모델 학습/배포, 추론을 수행합니다. (추론 및 배포시 triton server와 grpc 통신)
 - **triton inference server**: 실시간 추론 서버입니다.
 - **fluentd**: fastapi와 celery worker 컨테이너에서 전달하는 로그를 필터링하여, elastic search에 전달합니다.
-- **elastic search**: 전달된 로그를 저장및 검색하는 검색 엔진입니다.
+- **elastic search**: 전달된 로그를 저장 및 검색하는 검색 엔진입니다.
 - **kibana**: elastic search에 저장된 데이터를 시각화하고 대시보드를 구성하는 도구입니다.
 
 ## ERD

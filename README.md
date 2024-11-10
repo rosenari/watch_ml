@@ -29,13 +29,16 @@ npm run start
 
 ## 시스템 아키텍처
 
-![yolostudio drawio](https://github.com/user-attachments/assets/f7f87247-7484-49b2-97fc-0a00b6cddb95)
+![system](https://github.com/user-attachments/assets/24b166ec-adbf-4b17-b982-52c1038933a3)
 
 - **uvicorn(FastAPI)**: 클라이언트 요청에 따라 postgresql에 데이터를 저장하고 task queue에 task를 적재합니다. (비동기 데이터베이스 드라이버를 기반으로 postgresql와 통신)
 - **postgrsql**: 모델, 데이터셋, 추론파일에 대한 정보를 저장합니다. 
 - **redis**: celery task queue로 활용되며, 모델 학습 시 진행률을 저장합니다.
 - **celery worker**: 파일 검사, 모델 학습/배포, 추론을 수행합니다. (추론 및 배포시 triton server와 grpc 통신)
 - **triton inference server**: 실시간 추론 서버입니다.
+- **fluentd**: fastapi와 celery worker에서 전달하는 로그를 필터링하여, elastic search에 전달합니다.
+- **elastic search**: 전달된 로그를 저장및 검색하는 검색 엔진입니다.
+- **kibana**: elastic search에 저장된 데이터를 시각화하고 대시보드를 구성하는 도구입니다.
 
 ## ERD
 <p align="center">

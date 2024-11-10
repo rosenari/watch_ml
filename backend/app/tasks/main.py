@@ -12,19 +12,19 @@ from app.services.inference_service import InferenceService
 from app.dto import AiModelDTO
 from app.database import get_redis, get_session
 from app.repositories.inference_repository import FileType
+from app.logger import init_logger, LOGGER_NAME
 import os
 import asyncio
 import redis
 from datetime import datetime
 import logging
-import traceback
-
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 redis_url = CELERY_BROKER_URL
 app = Celery('tasks', broker=redis_url)
+
+init_logger()
+logger = logging.getLogger(LOGGER_NAME)
 
 
 # set redis key value
@@ -92,8 +92,8 @@ async def valid_archive(dataset_service: DataSetService, id: int):
         await dataset_service.update_status(id, status) 
 
         return result
-    except Exception as e:
-        logging.error(f"Unexpected Error in valid_archive task: {e}")
+    except Exception:
+        logger.error("Unexpected Error in valid_archive task", exc_info=True)
         return False
 
 
@@ -144,7 +144,7 @@ async def create_model(ml_service: MlService, model_name: str, model_ext: str, v
         clear_redis_keys_sync(f"train:{model_name}")  # Progress 제거 (redis)
         return True
     except Exception as e:
-        logging.error(f"Unexpected Error in create_model task: {e}")
+        logger.error(f"Unexpected Error in create_model task", exc_info=True)
         return False
 
 
@@ -175,7 +175,7 @@ async def deploy_model(ml_service: MlService, model_id: int):
 
         return True
     except Exception as e:
-        logging.error(f"Unexpected Error in deploy_model task: {e}")
+        logger.error(f"Unexpected Error in deploy_model task", exc_info=True)
         return False
     
 
@@ -201,7 +201,7 @@ async def undeploy_model(ml_service: MlService, model_id: int):
 
         return True
     except Exception as e:
-        logging.error(f"Unexpected Error in undeploy_model task: {e}")
+        logger.error(f"Unexpected Error in undeploy_model task", exc_info=True)
         return False
     
 
@@ -231,8 +231,6 @@ async def generate_inference(inference_service: InferenceService, inference_file
         await inference_service.update_status(inference_file_id, 'complete')  # 완료 표시
 
         return True
-    except Exception as e:
-        logging.error(f"Unexpected Error in generate_inference task: {e}")
-        logging.error("Traceback:")
-        logging.error("".join(traceback.format_exception(None, e, e.__traceback__)))
+    except Exception:
+        logger.error(f"Unexpected Error in generate_inference task", exc_info=True)
         return False

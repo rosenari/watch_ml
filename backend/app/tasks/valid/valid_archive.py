@@ -2,10 +2,11 @@ import os
 import zipfile
 import yaml
 import logging
+from app.logger import LOGGER_NAME
 
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+logger = logging.getLogger(LOGGER_NAME)
 image_extensions = {'.jpg', '.jpeg', '.png', '.bmp'}
 
 # YOLO 포맷 검증 함수
@@ -15,20 +16,20 @@ def check_yolo_format(txt_path, num_classes, zip_ref):
         for line in lines:
             elements = line.decode('utf-8').strip().split()
             if len(elements) != 5:
-                logging.error(f"Invalid YOLO format in file: {txt_path}")
+                logger.error(f"Invalid YOLO format in file: {txt_path}")
                 return False
             class_id = int(elements[0])
             if class_id < 0 or class_id >= num_classes:
-                logging.error(f"Invalid class ID {class_id} in file: {txt_path}")
+                logger.error(f"Invalid class ID {class_id} in file: {txt_path}")
                 return False
             for value in elements[1:]:
                 try:
                     float_value = float(value)
                     if not (0 <= float_value <= 1):
-                        logging.error(f"Invalid bounding box value {float_value} in file: {txt_path}")
+                        logger.error(f"Invalid bounding box value {float_value} in file: {txt_path}")
                         return False
                 except ValueError:
-                    logging.error(f"Invalid number {value} in file: {txt_path}")
+                    logger.error(f"Invalid number {value} in file: {txt_path}", exc_info=True)
                     return False
     return True
 
@@ -39,25 +40,25 @@ def verify_files(image_dir, label_dir, num_classes, zip_ref):
     for image in images:
         # 라벨 파일은 이미지 디렉토리에서 라벨 디렉토리로 대응시켜서 추정
         label_file = image.replace(image_dir, label_dir).replace('.jpg', '.txt').replace('.png', '.txt')  
-        logging.info(f"Verifying label: {label_file}")
+        logger.info(f"Verifying label: {label_file}")
 
         if label_file not in zip_ref.namelist():
-            logging.warning(f"Warning: Missing label file for image: {image}. Continuing without label.")
+            logger.warning(f"Warning: Missing label file for image: {image}. Continuing without label.")
             continue
 
         # YOLO 포맷 검증
         if not check_yolo_format(label_file, num_classes, zip_ref):
-            logging.error("Failed YOLO format validation")
+            logger.error("Failed YOLO format validation")
             return False
 
-    logging.info(f"All files in {image_dir} and corresponding labels verified successfully.")
+    logger.info(f"All files in {image_dir} and corresponding labels verified successfully.")
     return True
 
 # YOLO 데이터 세트 검증 (train/val/test 디렉토리 및 파일 구조)
 def verify_yolo_dataset(data_yaml, zip_ref):
     # 클래스 개수 확인
     if 'names' not in data_yaml:
-        logging.error("No 'names' key found in data.yaml")
+        logger.error("No 'names' key found in data.yaml")
         return False
 
     num_classes = len(data_yaml['names'])
@@ -70,10 +71,10 @@ def verify_yolo_dataset(data_yaml, zip_ref):
 
             # 압축 파일 내부 경로가 유효한지 확인
             if not any(f.startswith(image_dir) for f in zip_ref.namelist()):
-                logging.error(f"Image directory not found: {image_dir} inside the zip")
+                logger.error(f"Image directory not found: {image_dir} inside the zip")
                 return False
             if not any(f.startswith(label_dir) for f in zip_ref.namelist()):
-                logging.error(f"Label directory not found: {label_dir} inside the zip")
+                logger.error(f"Label directory not found: {label_dir} inside the zip")
                 return False
 
             # 이미지와 라벨 파일 검증
@@ -91,11 +92,11 @@ def parse_and_verify_zip(zip_path):
             with zip_ref.open('data.yaml') as yaml_file:
                 data_yaml = yaml.safe_load(yaml_file)
                 if not verify_yolo_dataset(data_yaml, zip_ref):
-                    logging.error("YOLO dataset verification failed.")
+                    logger.error("YOLO dataset verification failed.")
                     result = False
-                logging.info("YOLO dataset verified successfully.")
-    except Exception as e:
-        logging.error(f"An unexpected error occurred: {e}")
+                logger.info("YOLO dataset verified successfully.")
+    except Exception:
+        logger.error(f"Unexpected Error occurred", exc_info=True)
         result = False
     finally:
         return result

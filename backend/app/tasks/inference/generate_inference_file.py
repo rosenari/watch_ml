@@ -1,7 +1,9 @@
 import os
 import logging
+from app.logger import LOGGER_NAME
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+logger = logging.getLogger(LOGGER_NAME)
 
 
 def generate_inference_file(file_type: str, original_file_path: str, model_name: str, classes: list[str]) -> str:
@@ -131,4 +133,5 @@ def generate_inference_file(file_type: str, original_file_path: str, model_name:
         return output_path
 
     else:
+        logger.error(f"Unsupported file type: {file_type}")
         raise ValueError(f"Unsupported file type: {file_type}")

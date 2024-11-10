@@ -13,4 +13,8 @@ RUN gem install fluent-plugin-prometheus --version 2.1.0 \
     && gem sources --clear-all \
     && rm -rf /tmp/* /var/tmp/* /usr/lib/ruby/gems/*/cache/*.gem
 
+RUN gem install fluent-plugin-json --no-document \
+    && gem sources --clear-all \
+    && rm -rf /tmp/* /var/tmp/* /usr/lib/ruby/gems/*/cache/*.gem
+
 USER fluent

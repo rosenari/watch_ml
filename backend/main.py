@@ -6,27 +6,16 @@ from app.repositories.ml_repository import create_base_model
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
+from app.logger import init_logger, LOGGER_NAME
 import logging
-import traceback
-import json
 
 
-logger = logging.getLogger("backend")
-logger.setLevel(logging.INFO)
-
-# JSON 형태로 로그 포맷 설정
-handler = logging.StreamHandler()
-formatter = logging.Formatter(json.dumps({
-    "log": "%(message)s",
-    "tag": "backend",
-    "level": "%(levelname)s"
-}))
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+logger = logging.getLogger(LOGGER_NAME)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    init_logger()
     await create_tables()
     await create_base_model()
     yield
@@ -42,28 +31,31 @@ app.add_middleware(
     allow_headers=["*"],  # 모든 헤더 허용
 )
 
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Exception occurred: {exc}")
-    logger.error("Traceback:")
-    logger.error("".join(traceback.format_exception(None, exc, exc.__traceback__)))
-
     if isinstance(exc, NotFoundException):
+        logger.warning("Not Found Exception occurred", exc_info=True)
         return JSONResponse(
             status_code=404,
             content={"message": exc.message},
         )
+    
     elif isinstance(exc, ForbiddenException):
+        logger.warning("Forbidden Exception occurred", exc_info=True)
         return JSONResponse(
             status_code=403,
             content={"message": exc.message},
         )
+    
     elif isinstance(exc, BadRequestException):
+        logger.warning("Bad Request Exception occurred", exc_info=True)
         return JSONResponse(
             status_code=400,
             content={"message": exc.message},
         )
-    # 기타 예외는 500 상태 코드로 반환
+    
+    logger.error("Unknown Server Error occurred", exc_info=True)
     return JSONResponse(
         status_code=500,
         content={"message": "서버에서 알 수 없는 에러가 발생했습니다."},

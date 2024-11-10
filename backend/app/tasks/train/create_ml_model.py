@@ -1,15 +1,15 @@
 import os
 import logging
-import traceback
 import shutil
 from app.config import CELERY_ML_RUNS_PATH, MODEL_DIRECTORY, ML_REPO, TRITON_REPO
+from app.logger import LOGGER_NAME
 
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(LOGGER_NAME)
 
 
 def create_yolo_model(model_name: str, model_ext: str, base_model_path: str, version: int, output_dir: str, status_handler=lambda ri_key, status: None):
-    logging.info("start create_yolo_model")
+    logger.info("start create_yolo_model")
     # celery와 fastapi 의존성 분리로 인해 함수내에서 패키지 로딩 (yolo 패키지는 celery에만 존재)
     from ultralytics import YOLO
     import torch
@@ -27,7 +27,7 @@ def create_yolo_model(model_name: str, model_ext: str, base_model_path: str, ver
     def on_train_epoch_end(trainer):
         epoch = trainer.epoch
         total_epochs = trainer.epochs
-        logging.info(f"Epoch {epoch + 1}/{total_epochs} completed")
+        logger.info(f"Epoch {epoch + 1}/{total_epochs} completed")
         status_handler(f"train:{model_name}", f"{epoch}")
 
 
@@ -54,7 +54,7 @@ def create_yolo_model(model_name: str, model_ext: str, base_model_path: str, ver
         recall = metrics.box.mr
 
         best_model_path = model.trainer.best
-        logging.info(f"best model path: {best_model_path}")
+        logger.info(f"best model path: {best_model_path}")
 
         # best 모델을 레포로 복사
         dest_path = os.path.join(MODEL_DIRECTORY, model_name, str(version))
@@ -63,7 +63,7 @@ def create_yolo_model(model_name: str, model_ext: str, base_model_path: str, ver
         
         new_dest_path = os.path.join(dest_path, file_name)
         shutil.copy(best_model_path, new_dest_path)
-        logging.info(f"YOLOv8 model has been successfully stored")
+        logger.info(f"YOLOv8 model has been successfully stored")
         
         return True, {
             "model_name": model_name,
@@ -74,9 +74,8 @@ def create_yolo_model(model_name: str, model_ext: str, base_model_path: str, ver
             "precision": precision,
             "recall": recall
         }
-    except Exception as e:
-        logging.error(f"An error occurred while creating and saving the model: {e}")
-        logging.error(traceback.format_exc())
+    except Exception:
+        logger.error(f"An error occurred while creating and saving the model", exc_info=True)
         return False, None
     finally:
         # 명시적으로 자원을 전부 해제한다.
@@ -84,10 +83,10 @@ def create_yolo_model(model_name: str, model_ext: str, base_model_path: str, ver
             torch.cuda.empty_cache()
 
         del model 
-        logging.info("Deleted YOLO model object to release memory.")
+        logger.info("Deleted YOLO model object to release memory.")
         
         clear_directory_except(CELERY_ML_RUNS_PATH ,[ML_REPO, TRITON_REPO])  # 찌꺼기 제거
-        logging.info("Temporary directories cleaned up.")
+        logger.info("Temporary directories cleaned up.")
     
 
 # 특정 디렉터리 내에서 제외할 디렉터리를 제외하고 모든 파일과 디렉터리를 삭제
@@ -100,7 +99,7 @@ def clear_directory_except(target_dir: str, exclude_dirs: list):
         
         if os.path.isdir(item_path):
             shutil.rmtree(item_path)
-            logging.info(f"Directory removed: {item_path}")
+            logger.info(f"Directory removed: {item_path}")
         elif os.path.isfile(item_path):
             os.remove(item_path)
-            logging.info(f"File removed: {item_path}")
+            logger.info(f"File removed: {item_path}")

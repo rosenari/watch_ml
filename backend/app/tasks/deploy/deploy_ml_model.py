@@ -1,9 +1,11 @@
 import os
 import shutil
 import logging
+from app.logger import LOGGER_NAME
 
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+logger = logging.getLogger(LOGGER_NAME)
 
 
 # Triton 서버에 모델 배포
@@ -26,18 +28,18 @@ def deploy_to_triton(model_name: str, version: int, model_path: str, triton_mode
 
         create_triton_config(model_name, triton_model_path, output_dims)  # 설정파일은 버전 디렉터리와 같은 위치에 생성
 
-        logging.info(f"Model moved to Triton model repo: {version_path}")
+        logger.info(f"Model moved to Triton model repo: {version_path}")
 
         # Triton 서버에 모델 로드 요청
         if load_model_to_triton(triton_server_url, model_name):
-            logging.info(f"Model {model_name} successfully loaded to Triton server.")
+            logger.info(f"Model {model_name} successfully loaded to Triton server.")
             return True, dest_path
         else:
-            logging.error(f"Failed to load model {model_name} to Triton server.")
+            logger.error(f"Failed to load model {model_name} to Triton server.")
             return False, None
 
-    except Exception as e:
-        logging.error(f"Error deploying model to Triton: {e}")
+    except Exception:
+        logger.error(f"Error deploying model to Triton", exc_info=True)
         return False, None
 
 
@@ -73,7 +75,7 @@ output [
     with open(config_path, "w") as f:
         f.write(config_content)
 
-    logging.info(f"Created Triton config.pbtxt at {config_path}")
+    logger.info(f"Created Triton config.pbtxt at {config_path}")
 
   
 # gRPC를 통해 Triton 서버에 모델 로드 요청
@@ -84,11 +86,11 @@ def load_model_to_triton(triton_server_url: str, model_name: str):
 
         # 모델을 명시적으로 로드하기 위한 gRPC 요청
         triton_client.load_model(model_name)
-        logging.info(f"Requested loading of model {model_name} on Triton server.")
+        logger.info(f"Requested loading of model {model_name} on Triton server.")
         return True
 
     except Exception as e:
-        logging.error(f"Error loading model to Triton: {e}")
+        logger.error(f"Error loading model to Triton", exc_info=True)
         return False
     
 

@@ -7,6 +7,8 @@ YOLO STUDIO는 YOLO 사전 학습 모델을 기반으로 데이터셋을 학습�
 
 ### 사전 요구 사항
 - CUDA 12.6을 지원하는 NVIDIA 그래픽 카드 및 드라이버 ( >= NVIDIA RTX 3000 Series)
+- CUDA Toolkit
+- WSL2
 - docker
 - docker-compose
 - Nodejs

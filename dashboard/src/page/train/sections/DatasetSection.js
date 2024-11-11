@@ -18,6 +18,7 @@ function DatasetSection({ setModelPollEnabled }) {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [pollEnabled, setPollEnabled] = useState(true);
   const [ref, inView] = useInView();
+  const [initialized, setInitialized] = useState(false);
 
   // 무한 스크롤 로직
   const {
@@ -36,6 +37,7 @@ function DatasetSection({ setModelPollEnabled }) {
         setTimeout(() => {
           const formattedData = data.pages.flatMap(formatDatasetList);
           setDatasetData(formattedData);
+          setInitialized(true);
         });
       },
       cacheTime: 0,
@@ -56,6 +58,10 @@ function DatasetSection({ setModelPollEnabled }) {
     {
       refetchInterval: pollEnabled ? 500 : false,
       onSuccess: async (newStatusData) => {
+        if (!initialized) {
+          return;
+        }
+        
         const updatedData = datasetData.map((item) => ({
           ...item,
           status: newStatusData.find(status => status.id === item.key)?.status || item.status,

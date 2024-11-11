@@ -22,6 +22,8 @@ function InferenceSection() {
   const [ref, inView] = useInView();
   const [modelList, setModelList] = useState([]);
   const [isModelLoading, setIsModelLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
+
   // 배포된 모델 정보 가져오기
   useEffect(() => {
     const fetchData = async () => {
@@ -56,6 +58,7 @@ function InferenceSection() {
         setTimeout(() => {
           const formattedData = data.pages.flatMap(formatInferenceList);
           setInferenceData(formattedData);
+          setInitialized(true);
         });
       },
       staleTime: 0,
@@ -77,6 +80,10 @@ function InferenceSection() {
     {
       refetchInterval: pollEnabled ? 500 : false, // 0.5초마다 폴링
       onSuccess: async (newStatusData) => {
+        if (!initialized) {
+          return;
+        }
+
         const updatedData = inferenceData.map((item) => ({
           ...item,
           status: newStatusData.find((status) => status.id === item.key)?.status || item.status,

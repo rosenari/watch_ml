@@ -12,6 +12,7 @@ function ModelTableSection({ modelPollEnabled, setModelPollEnabled }) {
   const { modelData, setModelData } = useModel();
   const [selectedModelKeys, setSelectedModelKeys] = useState([]);
   const [ref, inView] = useInView();
+  const [initialized, setInitialized] = useState(false);
 
   // 무한 스크롤 로직
   const {
@@ -30,6 +31,7 @@ function ModelTableSection({ modelPollEnabled, setModelPollEnabled }) {
         setTimeout(() => {
           const formattedData = data.pages.flatMap(formatModelList);
           setModelData(formattedData);
+          setInitialized(true);
         });
       },
       cacheTime: 0,
@@ -50,13 +52,17 @@ function ModelTableSection({ modelPollEnabled, setModelPollEnabled }) {
     {
       refetchInterval: modelPollEnabled ? 500 : false,
       onSuccess: async (newStatusData) => {
+        if (!initialized) {
+          return;
+        }
+
         const updatedData = modelData.map((item) => ({
           ...item,
           status: newStatusData.find(status => status.id === item.key)?.status || item.status,
         }));
         setModelData(updatedData);
 
-        if (!updatedData.some(item => item.status === 'running' || item.status === 'pending')) {
+        if (!updatedData.some(item => item.status === 'running' || item.status === 'pending' || /^\d+$/.test(item.status))) {
           setModelPollEnabled(false);
           await refetch();
         }

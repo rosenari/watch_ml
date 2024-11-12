@@ -69,40 +69,54 @@ npm run start
 
 ### 데이터 셋 아카이브 업로드
 ![datasetupload](https://github.com/user-attachments/assets/65e289c7-efe6-4e40-9bbd-5fac9ecdbb91)
+
 > zip 파일 형태의 데이터 셋 아카이브를 업로드 할 수 있습니다.
 
 ### 데이터 셋 파일 검사
 <p align="center">
   <img src="https://github.com/user-attachments/assets/11ebbe97-3ded-482a-bd8e-5cb49783dcc6">
 </p>
+
 > 업로드된 아카이브 내 data.yaml, 디렉터리/파일 구조, 라벨 파일을 차례로 분석합니다.
 
 ![valid](https://github.com/user-attachments/assets/418e55d1-f51d-4f09-b9f9-5436462c164f)
+
 > 검사 중에는 스피너가 돌며 완료 시 체크 표시가 노출됩니다.
 
 ### 모델 학습 및 배포
 <p align="center">
   <img src="https://github.com/user-attachments/assets/fa2faab6-fbd9-4259-83ce-2c359b7a9484">
 </p>
+
 > 여러 아카이브를 선택하고 base 모델을 기반으로 생성을 요청하면 병합하여 학습을 진행합니다.
 
 ![train](https://github.com/user-attachments/assets/7df59e72-0d92-4d49-9589-e8473edfe368)
+
 > 학습 시 진행률이 실시간으로 표시되며 완료 시 배포가 가능해집니다.
 
 ### 이미지/영상 파일 업로드
 ![fileupload](https://github.com/user-attachments/assets/e3fa9c35-3fd5-4bd0-b988-b2d44f9aa925)
+
 > 추론을 위한 이미지/영상 파일을 업로드 할 수 있습니다.
 
 ### 추론
 <p align="center">
   <img src="https://github.com/user-attachments/assets/040d0fa0-4b08-4789-b778-91e25bddd6f1">
 </p>
+
 > 검사, 학습, 배포, 추론 과정에서 폴링 모듈은 status 상태에 따라 요청을 반복할지 멈출지 결정합니다.
 
 ![inference](https://github.com/user-attachments/assets/55e6dd2f-75b9-42e3-9853-467bbab0dfd6)
+
 > 이미지 또는 영상을 선택하고 배포된 모델을 선택하여 추론을 수행하면 결과 파일이 생성됩니다.
 
 ### 추론 결과 확인
 <p align="center">
 <img src="https://github.com/user-attachments/assets/a80d4474-614f-4311-9aa3-9764c507e803">
 </p>
+
+
+### 모니터링
+![image](https://github.com/user-attachments/assets/80c64c08-d75d-4f6e-a1b2-1e2979ea75b2)
+
+> fluentd를 통해 fastapi와 celery worker의 로그를 수집하고, 이를 elastic search에 저장 kibana를 통해 대시보드를 구성하여 모니터링합니다.
